@@ -170,18 +170,28 @@ python3 -m ocsf.schema 1.5.0 > schema.json
 
 ### Anthropic API Configuration
 
-The backend uses the Anthropic API via your Claude Code subscription. You need to configure your API key:
+The backend uses the Anthropic API via your Claude Code subscription. Authentication is automatic via Claude CLI:
 
-**Set up your API key:**
+**Set up authentication (easiest):**
 ```bash
-# Option 1: Environment variable (recommended)
+claude setup-token
+```
+
+This uses your Claude Code subscription - no API keys to manage!
+
+**Alternative: Manual API Key**
+```bash
+# Option 1: Environment variable
 export ANTHROPIC_API_KEY="your-api-key-here"
 
 # Option 2: Create a .env file in the repo root
 echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
 ```
 
-You can obtain your API key from https://console.anthropic.com
+**How it works:**
+- When the backend starts, it automatically detects your authentication
+- Priority: explicit `ANTHROPIC_API_KEY` env var → Claude CLI auth → error
+- No configuration needed if using Claude CLI!
 
 **Models used:**
 - Regex and Categorization: `claude-3-5-sonnet-20241022`

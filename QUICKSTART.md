@@ -8,10 +8,23 @@ This guide shows you how to get the OCSF Playground running with your Claude Cod
 - Node.js 20+ / npm 10+
 - Anthropic API key from https://console.anthropic.com
 
-## Step 1: Set Your API Key
+## Step 1: Authenticate with Claude CLI
+
+The easiest way is to use your Claude Code subscription via the Claude CLI:
 
 ```bash
-# Option A: Set environment variable (recommended)
+# Set up Claude CLI authentication
+claude setup-token
+```
+
+This will prompt you to authenticate with your Claude Code subscription.
+
+**Alternative: Manual API Key (Optional)**
+
+If you prefer to set the API key manually instead of using Claude CLI:
+
+```bash
+# Option A: Set environment variable
 export ANTHROPIC_API_KEY="sk-ant-xxx..."
 
 # Option B: Create .env file in repo root
@@ -75,26 +88,36 @@ You should see the OCSF Normalization Playground interface!
 
 ## Testing Your Setup
 
-### Test 1: Backend is Running
+### Test 1: Claude CLI Authentication
+```bash
+# Verify Claude CLI is set up
+claude --version
+
+# If not authenticated yet, run:
+claude setup-token
+```
+
+### Test 2: Backend is Running
 ```bash
 curl http://127.0.0.1:8000/schema.json
 # Should return a 404 (that's OK, it means the server is running)
 ```
 
-### Test 2: API Key is Configured
+### Test 3: Authentication is Working
 ```bash
 cd /Users/apple/ocsf-playground/playground
 pipenv run python3 << 'EOF'
-import os
-api_key = os.environ.get("ANTHROPIC_API_KEY")
-if api_key:
-    print(f"✓ API key configured (starts with: {api_key[:10]}...)")
-else:
-    print("✗ ANTHROPIC_API_KEY not set!")
+from backend.core.claude_auth import ClaudeAuthentication
+try:
+    api_key = ClaudeAuthentication.get_api_key()
+    print("✓ Authentication configured!")
+    print(f"  Using: {'Claude CLI' if api_key == 'claude-cli-authenticated' else 'Manual API key'}")
+except Exception as e:
+    print(f"✗ Authentication error: {e}")
 EOF
 ```
 
-### Test 3: Claude API Works
+### Test 4: Claude API Works
 ```bash
 curl -X POST "http://127.0.0.1:8000/transformer/heuristic/create/" \
   -H "Content-Type: application/json" \
@@ -133,13 +156,18 @@ Open browser DevTools (F12) and check the Console tab for any errors
 
 ## Troubleshooting
 
-### "ANTHROPIC_API_KEY not found"
+### "No Claude API key found" or "Authentication error"
 ```bash
-# Check if variable is set
-echo $ANTHROPIC_API_KEY
+# First, authenticate with Claude CLI:
+claude setup-token
 
-# If empty, set it:
-export ANTHROPIC_API_KEY="your-key-here"
+# This will prompt you to sign in with your Claude Code subscription
+
+# Verify it's working:
+claude --version
+
+# If you already have an API key, you can also set it manually:
+export ANTHROPIC_API_KEY="your-api-key"
 
 # Restart the backend
 pipenv run python3 manage.py runserver

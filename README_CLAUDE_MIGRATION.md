@@ -8,12 +8,21 @@ Instead of requiring AWS credentials and paying for Bedrock inference, your OCSF
 
 ## Getting Started (3 Simple Steps)
 
-### Step 1: Get Your API Key
-Visit https://console.anthropic.com and copy your API key
+### Step 1: Authenticate with Claude CLI
+```bash
+claude setup-token
+```
+This uses your Claude Code subscription - no manual API key needed!
 
-### Step 2: Set Environment Variable
+**Alternative:** If you prefer manual API key:
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+### Step 2: Install Backend Dependencies
+```bash
+cd /Users/apple/ocsf-playground
+pipenv install
 ```
 
 ### Step 3: Run the Application
@@ -91,24 +100,35 @@ Much simpler! And no AWS credentials needed.
 | Entity Analysis | claude-3-7-sonnet-20250219 | Identify OCSF fields (with extended thinking) |
 | Entity Extraction | claude-3-5-sonnet-20241022 | Generate transform logic |
 
-## API Key Configuration
+## Authentication Options
 
-### Option 1: Environment Variable (Recommended)
+### Option 1: Claude CLI (Recommended)
+```bash
+# Use your Claude Code subscription
+claude setup-token
+
+# Verify it's working
+claude --version
+```
+
+This is the easiest and most secure method. No API keys to manage!
+
+### Option 2: Environment Variable
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-### Option 2: .env File
+### Option 3: .env File
 Create `.env` in repo root:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Option 3: In Code (Not Recommended)
-```python
-import os
-os.environ["ANTHROPIC_API_KEY"] = "sk-ant-..."
-```
+### Priority Order
+The application checks for authentication in this order:
+1. `ANTHROPIC_API_KEY` environment variable (explicit override)
+2. Claude CLI authentication (via `claude setup-token`)
+3. Error if neither is found
 
 ## Verification
 

@@ -1,6 +1,6 @@
 """
 Claude API client wrapper compatible with LangChain's Runnable interface.
-Uses Anthropic's Python SDK instead of AWS Bedrock.
+Uses Anthropic's Python SDK with Claude CLI authentication.
 """
 
 import logging
@@ -11,6 +11,8 @@ from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
+
+from backend.core.claude_auth import ClaudeAuthentication
 
 logger = logging.getLogger("backend")
 
@@ -31,7 +33,7 @@ class ClaudeAPIRunnable(Runnable[LanguageModelInput, BaseMessage]):
         thinking_budget_tokens: Optional[int] = None,
     ):
         """
-        Initialize Claude API client.
+        Initialize Claude API client using Claude CLI authentication.
 
         Args:
             model: Model ID (e.g., "claude-3-5-sonnet-20241022")
@@ -40,6 +42,10 @@ class ClaudeAPIRunnable(Runnable[LanguageModelInput, BaseMessage]):
             system_prompt: Optional system prompt
             thinking_enabled: Enable extended thinking
             thinking_budget_tokens: Budget for thinking tokens (for extended thinking)
+
+        Note:
+            Authentication is handled automatically via Claude CLI or ANTHROPIC_API_KEY env var.
+            No explicit API key setup needed if using 'claude setup-token'.
         """
         self.model = model
         self.temperature = temperature
@@ -47,8 +53,18 @@ class ClaudeAPIRunnable(Runnable[LanguageModelInput, BaseMessage]):
         self.system_prompt = system_prompt
         self.thinking_enabled = thinking_enabled
         self.thinking_budget_tokens = thinking_budget_tokens
+
+        # Ensure authentication is set up
+        try:
+            ClaudeAuthentication.ensure_authenticated()
+        except Exception as e:
+            logger.warning(f"Authentication check: {e}")
+            # Continue anyway - Anthropic SDK will try default auth chain
+
+        # Initialize Anthropic client - will use ANTHROPIC_API_KEY or Claude CLI auth
         self.client = Anthropic()
         self._tools: List[Dict[str, Any]] = []
+        logger.debug(f"Initialized Claude API client with model: {model}")
 
     def bind_tools(self, tools: List[BaseTool]) -> "ClaudeAPIRunnable":
         """Bind tools to this runnable, returning a new instance with tools configured."""
