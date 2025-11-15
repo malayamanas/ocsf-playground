@@ -1,11 +1,32 @@
-from dataclasses import dataclass
-
 from typing import Any, Dict, List, Callable, Tuple
 
 from ocsf.schema import OcsfAttr, OcsfEvent, OcsfObject, OcsfSchema
 
-@dataclass
 class PrintableOcsfAttr(OcsfAttr):
+    def __init__(self, **kwargs):
+        # Initialize parent class with all kwargs
+        super().__init__(**kwargs)
+
+    @classmethod
+    def from_attr(cls, attr: OcsfAttr):
+        """Create a PrintableOcsfAttr from an existing OcsfAttr object."""
+        # Create a new instance without calling __init__
+        instance = cls.__new__(cls)
+
+        # Copy all attributes from the source attribute
+        for attr_name in dir(attr):
+            if not attr_name.startswith('_') and not callable(getattr(attr, attr_name, None)):
+                try:
+                    setattr(instance, attr_name, getattr(attr, attr_name))
+                except AttributeError:
+                    pass
+
+        # Also copy from __dict__
+        for key, value in attr.__dict__.items():
+            setattr(instance, key, value)
+
+        return instance
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert the attribute to a simplified JSON.
@@ -30,9 +51,41 @@ class PrintableOcsfAttr(OcsfAttr):
         }
 
 
-@dataclass
 class PrintableOcsfEvent(OcsfEvent):
-    attrs_to_include: List[str] = None
+    def __init__(self, attrs_to_include: List[str] = None, **kwargs):
+        # Don't call parent __init__, just copy attributes manually
+        # This avoids the positional argument requirement
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        # Add our custom attribute
+        self.attrs_to_include = attrs_to_include
+
+    @classmethod
+    def from_event(cls, event: OcsfEvent, attrs_to_include: List[str] = None):
+        """Create a PrintableOcsfEvent from an existing OcsfEvent object."""
+        # Create a new instance without calling __init__
+        instance = cls.__new__(cls)
+
+        # Copy all attributes from the source event
+        # Use dir() to get all attributes including those from parent classes
+        for attr_name in dir(event):
+            # Skip private/magic methods and methods
+            if not attr_name.startswith('_') and not callable(getattr(event, attr_name, None)):
+                try:
+                    setattr(instance, attr_name, getattr(event, attr_name))
+                except AttributeError:
+                    # Some attributes might be read-only, skip them
+                    pass
+
+        # Also copy from __dict__ to ensure we get all instance attributes
+        for key, value in event.__dict__.items():
+            setattr(instance, key, value)
+
+        # Add our custom attribute
+        instance.attrs_to_include = attrs_to_include
+
+        return instance
 
     def to_dict(self, filter_attributes: bool = False) -> Dict[str, Any]:
         """
@@ -52,23 +105,49 @@ class PrintableOcsfEvent(OcsfEvent):
             "name": self.name,
             "uid": self.uid,
             "attributes": {
-                attr_name: PrintableOcsfAttr(**attr.__dict__).to_dict()
+                attr_name: PrintableOcsfAttr.from_attr(attr).to_dict()
                 for attr_name, attr in filtered_attributes.items()
             }
         }
 
-@dataclass
 class PrintableOcsfObject(OcsfObject):
-    include_all_attrs: bool = False
-    attrs_to_include: List[str] = None
+    def __init__(self, include_all_attrs: bool = False, attrs_to_include: List[str] = None, **kwargs):
+        # Don't call parent __init__, just set attributes manually
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    def __init__(self, *args, **kwargs):
-        self.include_all_attrs = kwargs.pop("include_all_attrs", False)
-        self.attrs_to_include = kwargs.pop("attrs_to_include", None)
-        super().__init__(*args, **kwargs)
+        self.include_all_attrs = include_all_attrs
+        self.attrs_to_include = attrs_to_include
 
         if self.include_all_attrs and self.attrs_to_include:
             raise ValueError("Cannot specify to include all attributes and a specific list of attributes to filter out at the same time.")
+
+    @classmethod
+    def from_object(cls, obj: OcsfObject, include_all_attrs: bool = False, attrs_to_include: List[str] = None):
+        """Create a PrintableOcsfObject from an existing OcsfObject object."""
+        # Create a new instance without calling __init__
+        instance = cls.__new__(cls)
+
+        # Copy all attributes from the source object
+        for attr_name in dir(obj):
+            if not attr_name.startswith('_') and not callable(getattr(obj, attr_name, None)):
+                try:
+                    setattr(instance, attr_name, getattr(obj, attr_name))
+                except AttributeError:
+                    pass
+
+        # Also copy from __dict__
+        for key, value in obj.__dict__.items():
+            setattr(instance, key, value)
+
+        # Add our custom attributes
+        instance.include_all_attrs = include_all_attrs
+        instance.attrs_to_include = attrs_to_include
+
+        if instance.include_all_attrs and instance.attrs_to_include:
+            raise ValueError("Cannot specify to include all attributes and a specific list of attributes to filter out at the same time.")
+
+        return instance
 
     def to_dict(self, filter_attributes: bool = False) -> Dict[str, Any]:
         """
@@ -89,7 +168,7 @@ class PrintableOcsfObject(OcsfObject):
             "description": self.description,
             "name": self.name,
             "attributes": {
-                attr_name: PrintableOcsfAttr(**attr.__dict__).to_dict()
+                attr_name: PrintableOcsfAttr.from_attr(attr).to_dict()
                 for attr_name, attr in filtered_attributes.items()
             }
         }
@@ -107,7 +186,8 @@ def make_get_ocsf_event_schema(schema: OcsfSchema) -> Callable[[str], PrintableO
             raise ValueError(f"Invalid event class: {event_name}")
 
         # Convert the schema to a PrintableOcsfEvent
-        printable_event = PrintableOcsfEvent(**event_class.__dict__, attrs_to_include=filtered_attributes)
+        # Instead of using __dict__, copy the object directly
+        printable_event = PrintableOcsfEvent.from_event(event_class, attrs_to_include=filtered_attributes)
 
         return printable_event
     
@@ -167,7 +247,7 @@ def make_get_ocsf_object_schemas(schema: OcsfSchema) -> Callable[[str], List[Pri
             should_include_all_attrs = obj_name in object_was_leaf # If it was ever a leaf, we want to include all attributes
             filtered_attributes = relevant_attributes.get(obj_name, []) if not should_include_all_attrs else []
 
-            printable_objects.append(PrintableOcsfObject(**obj.__dict__, include_all_attrs=should_include_all_attrs, attrs_to_include=filtered_attributes))
+            printable_objects.append(PrintableOcsfObject.from_object(obj, include_all_attrs=should_include_all_attrs, attrs_to_include=filtered_attributes))
 
         return printable_objects
     

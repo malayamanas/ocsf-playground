@@ -33,20 +33,17 @@ class ClaudeAuthentication:
     ]
 
     @staticmethod
-    def get_api_key() -> str:
+    def get_api_key() -> Optional[str]:
         """
         Get the API key from Claude CLI or environment.
 
         Priority order:
         1. ANTHROPIC_API_KEY environment variable (explicit override)
         2. Claude CLI authentication (via setup-token)
-        3. Raise error if none found
+        3. Return None if none found (will try OAuth token next)
 
         Returns:
-            str: The API key
-
-        Raises:
-            ClaudeAuthError: If no valid authentication is found
+            str or None: The API key if found, None otherwise
         """
         # First, check if ANTHROPIC_API_KEY is explicitly set in environment
         if api_key := os.environ.get("ANTHROPIC_API_KEY"):
@@ -58,86 +55,75 @@ class ClaudeAuthentication:
             logger.info("Using API key from Claude CLI authentication")
             return api_key
 
-        # If we get here, no authentication was found
-        raise ClaudeAuthError(
-            "No Claude API key found. \n\n"
-            "To authenticate, run:\n"
-            "  claude setup-token\n\n"
-            "Or set the environment variable:\n"
-            "  export ANTHROPIC_API_KEY='your-api-key'\n\n"
-            "Learn more: https://console.anthropic.com"
-        )
+        # Return None - caller will try OAuth token
+        return None
+
+    @staticmethod
+    def get_auth_token() -> Optional[str]:
+        """
+        Get the OAuth token from environment (for Claude Code).
+
+        Returns:
+            str or None: The OAuth token if found, None otherwise
+        """
+        if auth_token := os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+            logger.info("Using CLAUDE_CODE_OAUTH_TOKEN from environment variable")
+            return auth_token
+        return None
+
+    @staticmethod
+    def get_credentials() -> tuple[Optional[str], Optional[str]]:
+        """
+        Get authentication credentials (api_key, auth_token).
+
+        Priority order:
+        1. ANTHROPIC_API_KEY (traditional API key)
+        2. CLAUDE_CODE_OAUTH_TOKEN (OAuth token for Claude Code)
+        3. Claude CLI authentication
+        4. Raise error if none found
+
+        Returns:
+            tuple: (api_key, auth_token) - one will be set, other will be None
+
+        Raises:
+            ClaudeAuthError: If no valid authentication is found
+        """
+        api_key = ClaudeAuthentication.get_api_key()
+        auth_token = ClaudeAuthentication.get_auth_token()
+
+        if api_key:
+            return (api_key, None)
+        elif auth_token:
+            return (None, auth_token)
+        else:
+            raise ClaudeAuthError(
+                "No Claude authentication found. \n\n"
+                "To authenticate, run:\n"
+                "  claude setup-token\n\n"
+                "Or set one of these environment variables:\n"
+                "  export ANTHROPIC_API_KEY='your-api-key'\n"
+                "  export CLAUDE_CODE_OAUTH_TOKEN='your-oauth-token'\n\n"
+                "Learn more: https://console.anthropic.com"
+            )
 
     @staticmethod
     def _get_claude_cli_api_key() -> Optional[str]:
         """
         Attempt to retrieve API key from Claude CLI.
 
-        Returns:
-            str or None: The API key if found, None otherwise
-        """
-        try:
-            # Try to run claude command to check if it's authenticated
-            # The claude CLI has the credentials, but we need to get them
-            # Check if claude command is available
-            result = subprocess.run(
-                ["claude", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            if result.returncode != 0:
-                logger.debug("Claude CLI not found or not authenticated")
-                return None
-
-            logger.debug("Claude CLI is available and authenticated")
-
-            # The Claude CLI stores authentication internally, and we rely on
-            # the Anthropic SDK to use the default authentication chain
-            # which includes Claude CLI credentials via environment variables
-            # that the CLI sets up automatically
-            #
-            # The Anthropic client will automatically find the key if:
-            # 1. ANTHROPIC_API_KEY environment variable is set
-            # 2. Claude CLI has been authenticated via 'claude setup-token'
-            #
-            # For now, we signal that Claude CLI is available
-            return ClaudeAuthentication._extract_token_from_cli()
-
-        except FileNotFoundError:
-            logger.debug("Claude CLI command not found in PATH")
-            return None
-        except subprocess.TimeoutExpired:
-            logger.debug("Claude CLI check timed out")
-            return None
-        except Exception as e:
-            logger.debug(f"Error checking Claude CLI: {e}")
-            return None
-
-    @staticmethod
-    def _extract_token_from_cli() -> Optional[str]:
-        """
-        Attempt to extract the authentication token from Claude CLI.
-
-        The Claude CLI stores tokens in a secure location. The Anthropic SDK
-        can use Claude's authentication via environment variables or system
-        credential stores.
+        Note: The Anthropic SDK has built-in support for Claude CLI authentication
+        when initialized without explicit credentials. We don't need to return
+        a dummy value here.
 
         Returns:
-            str or None: A marker indicating Claude CLI auth is available
+            None: We let the Anthropic SDK handle Claude CLI auth directly
         """
-        # Try to check if Claude CLI has valid authentication
-        # by attempting a test call
-        try:
-            # Check if CLAUDE_API_KEY or similar is set by Claude CLI
-            # The Anthropic client will check for these automatically
-            logger.debug("Claude CLI authentication detected")
-            # Return a marker to indicate successful detection
-            return "claude-cli-authenticated"
-        except Exception as e:
-            logger.debug(f"Could not verify Claude CLI authentication: {e}")
-            return None
+        # The Anthropic SDK's default initialization (Anthropic()) will
+        # automatically detect and use Claude CLI credentials if available.
+        # We don't need to return anything here - just let it be None
+        # so that get_credentials() can proceed to check for OAuth token
+        # or fall back to the SDK's default auth chain.
+        return None
 
     @staticmethod
     def ensure_authenticated() -> None:
@@ -148,7 +134,7 @@ class ClaudeAuthentication:
             ClaudeAuthError: If authentication cannot be found or configured
         """
         try:
-            ClaudeAuthentication.get_api_key()
+            ClaudeAuthentication.get_credentials()
             logger.info("✓ Claude authentication verified")
         except ClaudeAuthError as e:
             logger.error(f"Authentication error: {e}")

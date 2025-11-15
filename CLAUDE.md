@@ -168,35 +168,34 @@ python3 -m ocsf.schema 1.5.0 > schema.json
 - **Ace Editor**: Code editor component (via ace-builds)
 - **OpenAPI Generator**: Generate TypeScript API client
 
-### Anthropic API Configuration
+### Claude Authentication
 
-The backend uses the Anthropic API via your Claude Code subscription. Authentication is automatic via Claude CLI:
+The backend uses the **Claude CLI** (`claude` binary) instead of the Anthropic API. This means you don't need an API key - it uses your existing Claude Code authentication!
 
-**Set up authentication (easiest):**
+**Setup:**
 ```bash
-claude setup-token
-```
+# Make sure claude is authenticated (you should already have done this)
+claude --version
 
-This uses your Claude Code subscription - no API keys to manage!
-
-**Alternative: Manual API Key**
-```bash
-# Option 1: Environment variable
-export ANTHROPIC_API_KEY="your-api-key-here"
-
-# Option 2: Create a .env file in the repo root
-echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
+# Start the server - no API key needed!
+cd playground
+python3 manage.py runserver
 ```
 
 **How it works:**
-- When the backend starts, it automatically detects your authentication
-- Priority: explicit `ANTHROPIC_API_KEY` env var → Claude CLI auth → error
-- No configuration needed if using Claude CLI!
+- The backend calls the `claude` CLI binary directly for all LLM operations
+- Authentication is handled automatically by the Claude CLI using your Claude Code subscription
+- No environment variables needed!
+- No API keys to manage!
+
+**Advantages:**
+- ✅ No Anthropic API key required
+- ✅ Uses your existing Claude Code subscription
+- ✅ Authentication handled automatically by Claude CLI
+- ✅ Same models and capabilities as the API
 
 **Models used:**
-- Regex and Categorization: `claude-3-5-sonnet-20241022`
-- Entity Analysis (with extended thinking): `claude-3-7-sonnet-20250219`
-- Entity Extraction: `claude-3-5-sonnet-20241022`
+- All experts now use: `claude-sonnet-4-5-20250514` (Claude 4.5 Sonnet)
 
 ## Important Caveats and Known Issues
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import logging
 
-from backend.core.claude_api_client import ClaudeAPIRunnable
+from backend.core.claude_cli_client import ClaudeCLIRunnable
 
 from backend.regex_expert.parameters import RegexFlavor
 from backend.regex_expert.prompting import get_system_prompt_factory
@@ -20,9 +20,9 @@ def get_regex_expert(regex_flavor: RegexFlavor) -> Expert:
     # Get the tool bundle for the given transform language
     tool_bundle = get_tool_bundle(regex_flavor)
 
-    # Define our Claude API LLM and attach the tools to it
-    llm = ClaudeAPIRunnable(
-        model="claude-3-5-sonnet-20241022",
+    # Define our Claude CLI LLM and attach the tools to it
+    llm = ClaudeCLIRunnable(
+        model="claude-sonnet-4-5-20250514",
         temperature=0,  # Suitable for straightforward, practical code generation
         max_tokens=16000,
         thinking_enabled=False

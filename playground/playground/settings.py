@@ -86,6 +86,12 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'Playground API',
     'DESCRIPTION': 'API for the Playground.',
     'VERSION': '0.1.0',
+    # Disable authentication schemes in OpenAPI schema
+    # The API endpoints don't require client authentication
+    'SECURITY': [],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {}
+    },
 }
 
 

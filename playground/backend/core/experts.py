@@ -46,7 +46,7 @@ def invoke_expert(expert: Expert, task: PlaygroundTask) -> PlaygroundTask:
 
     # Perform the tool call using the LLM's response to create our final task result
     tool_call = inference_result.response.tool_calls[-1]
-    result = expert.tools.task_tool(tool_call["args"])
+    result = expert.tools.task_tool.invoke(tool_call["args"])
     task.set_work_item(result)
 
     # Append the tool call to the context
