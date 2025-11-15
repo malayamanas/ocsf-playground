@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import logging
 from typing import Any, Callable, Dict
 
-from botocore.config import Config
 from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import Runnable
@@ -14,15 +13,6 @@ from backend.core.inference import perform_inference
 
 
 logger = logging.getLogger("backend")
-
-# Define a boto Config to use w/ our LLM that's more resilient to long waits and frequent throttling
-DEFULT_BOTO_CONFIG = Config(
-    read_timeout=120,  # Wait 2 minutes for a response from the LLM
-    retries={
-        'max_attempts': 20,  # Increase the number of retry attempts
-        'mode': 'adaptive'   # Use adaptive retry strategy for better throttling handling
-    }
-)
 
 @dataclass
 class Expert:

@@ -4,12 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-boto3 = "*"
-botocore = "*"
+anthropic = "*"
 django = "*"
 djangorestframework = "*"
 langchain = "*"
-langchain-aws = "*"
+langchain-core = "*"
 requests = "*"
 django-cors-headers = "*"
 drf-spectacular = "*"
@@ -18,4 +17,4 @@ ocsf-lib = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.12"
+python_version = "3.13"

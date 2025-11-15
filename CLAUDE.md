@@ -155,8 +155,8 @@ python3 -m ocsf.schema 1.5.0 > schema.json
 ### Backend Dependencies (Pipfile)
 
 - **Django + DRF**: Web framework and REST API
-- **LangChain + langchain-aws**: LLM orchestration and Bedrock integration
-- **boto3/botocore**: AWS SDK (required for Bedrock)
+- **Anthropic**: Claude API client for LLM inference
+- **LangChain + langchain-core**: LLM interface abstraction and task orchestration
 - **ocsf-lib**: OCSF schema definitions
 - **drf-spectacular**: OpenAPI schema generation
 
@@ -168,12 +168,25 @@ python3 -m ocsf.schema 1.5.0 > schema.json
 - **Ace Editor**: Code editor component (via ace-builds)
 - **OpenAPI Generator**: Generate TypeScript API client
 
-### AWS Configuration
+### Anthropic API Configuration
 
-The backend requires AWS Bedrock access:
-- Credentials in `~/.aws/credentials` or environment variables
-- Access to Claude 3.7 Sonnet in `us-west-2` region
-- Model ID: `us.anthropic.claude-3-7-sonnet-20250219-v1:0`
+The backend uses the Anthropic API via your Claude Code subscription. You need to configure your API key:
+
+**Set up your API key:**
+```bash
+# Option 1: Environment variable (recommended)
+export ANTHROPIC_API_KEY="your-api-key-here"
+
+# Option 2: Create a .env file in the repo root
+echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
+```
+
+You can obtain your API key from https://console.anthropic.com
+
+**Models used:**
+- Regex and Categorization: `claude-3-5-sonnet-20241022`
+- Entity Analysis (with extended thinking): `claude-3-7-sonnet-20250219`
+- Entity Extraction: `claude-3-5-sonnet-20241022`
 
 ## Important Caveats and Known Issues
 

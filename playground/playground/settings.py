@@ -143,8 +143,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Logging configuration
-logging.getLogger("boto3").setLevel(logging.WARNING) # Suppress noisy boto logs
-logging.getLogger("botocore").setLevel(logging.WARNING) # Suppress noisy boto logs
 
 os.makedirs('logs', exist_ok=True)  # Ensure logs directory exists
 

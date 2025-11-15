@@ -1,13 +1,13 @@
 import logging
 
-from langchain_aws import ChatBedrockConverse
+from backend.core.claude_api_client import ClaudeAPIRunnable
 
 from backend.core.ocsf.ocsf_versions import OcsfVersion
 from backend.entities_expert.prompting import get_analyze_system_prompt_factory, get_extract_system_prompt_factory
 from backend.entities_expert.tool_def import get_analyze_tool_bundle, get_extract_tool_bundle
 from backend.entities_expert.task_def import AnalysisTask, ExtractTask
 
-from backend.core.experts import DEFULT_BOTO_CONFIG, Expert, invoke_expert
+from backend.core.experts import Expert, invoke_expert
 
 
 logger = logging.getLogger("backend")
@@ -18,20 +18,14 @@ def get_analysis_expert(ocsf_version: OcsfVersion, ocsf_event_name: str) -> Expe
 
     tool_bundle = get_analyze_tool_bundle(ocsf_version)
 
-    # Define our Bedrock LLM and attach the tools to it
-    llm = ChatBedrockConverse(
-            model="us.anthropic.claude-3-7-sonnet-20250219-v1:0", 
-            temperature=1, # Must be 1 for "thinking" mode
-            max_tokens=30001,
-            region_name="us-west-2", # Models are only available in limited regions
-            additional_model_request_fields={
-                "thinking": {
-                    "type": "enabled",
-                    "budget_tokens": 30000
-                }
-            },
-            config=DEFULT_BOTO_CONFIG
-        )
+    # Define our Claude API LLM with extended thinking enabled
+    llm = ClaudeAPIRunnable(
+        model="claude-3-7-sonnet-20250219",
+        temperature=1,  # Required for extended thinking
+        max_tokens=30001,
+        thinking_enabled=True,
+        thinking_budget_tokens=30000
+    )
     llm_w_tools = llm.bind_tools(tool_bundle.to_list())
 
     return Expert(
@@ -55,19 +49,13 @@ def get_extraction_expert(ocsf_version: OcsfVersion, ocsf_event_name: str) -> Ex
 
     tool_bundle = get_extract_tool_bundle(ocsf_version)
 
-    # Define our Bedrock LLM and attach the tools to it
-    llm = ChatBedrockConverse(
-            model="us.anthropic.claude-3-7-sonnet-20250219-v1:0", 
-            temperature=0, # Good for straightforward, practical code generation
-            max_tokens=30000,
-            region_name="us-west-2", # Models are only available in limited regions
-            additional_model_request_fields={
-                "thinking": {
-                    "type": "disabled"
-                }
-            },
-            config=DEFULT_BOTO_CONFIG
-        )
+    # Define our Claude API LLM and attach the tools to it
+    llm = ClaudeAPIRunnable(
+        model="claude-3-5-sonnet-20241022",
+        temperature=0,  # Good for straightforward, practical code generation
+        max_tokens=30000,
+        thinking_enabled=False
+    )
     llm_w_tools = llm.bind_tools(tool_bundle.to_list())
 
     return Expert(

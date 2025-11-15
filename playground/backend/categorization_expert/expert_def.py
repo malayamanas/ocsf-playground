@@ -1,13 +1,13 @@
 import logging
 
-from langchain_aws import ChatBedrockConverse
+from backend.core.claude_api_client import ClaudeAPIRunnable
 
 from backend.core.ocsf.ocsf_versions import OcsfVersion
 from backend.categorization_expert.prompting import get_system_prompt_factory
 from backend.categorization_expert.tool_def import get_tool_bundle
 from backend.categorization_expert.task_def import CategorizationTask
 
-from backend.core.experts import DEFULT_BOTO_CONFIG, Expert, invoke_expert
+from backend.core.experts import Expert, invoke_expert
 
 
 logger = logging.getLogger("backend")
@@ -19,18 +19,12 @@ def get_categorization_expert(ocsf_version: OcsfVersion) -> Expert:
     # Get the tool bundle for the given transform language
     tool_bundle = get_tool_bundle(ocsf_version)
 
-    # Define our Bedrock LLM and attach the tools to it
-    llm = ChatBedrockConverse(
-        model="us.anthropic.claude-3-7-sonnet-20250219-v1:0", 
-        temperature=0, # Suitable for straightforward, practical code generation
+    # Define our Claude API LLM and attach the tools to it
+    llm = ClaudeAPIRunnable(
+        model="claude-3-5-sonnet-20241022",
+        temperature=0,  # Suitable for straightforward, practical code generation
         max_tokens=16000,
-        region_name="us-west-2", # Models are only available in limited regions
-        additional_model_request_fields={
-            "thinking": {
-                "type": "disabled"
-            }
-        },
-        config=DEFULT_BOTO_CONFIG
+        thinking_enabled=False
     )
     llm_w_tools = llm.bind_tools(tool_bundle.to_list())
 
