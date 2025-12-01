@@ -1,0 +1,492 @@
+{
+  "demo_name": "Multi-Zone APT Attack - Event Correlation Example",
+  "description": "This demonstrates how OCSF enables correlation of related events across multiple SOCs. The attacker compromises Zone 5 first, then laterally moves to Zones 12 and 23.",
+  "attack_timeline": "2025-12-01 09:15:00 - 09:45:00 (30-minute attack window)",
+  "socs_affected": ["Zone 5", "Zone 12", "Zone 23"],
+  "correlation_keys": {
+    "attacker_c2_ip": "185.220.101.47",
+    "attacker_domain": "cdn-services-update.com",
+    "malicious_dll_hash": "A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A1B2",
+    "compromised_user": "DEFENSE\\svc_logistics",
+    "attack_technique": "T1021.002 (SMB/Windows Admin Shares)"
+  },
+  "events": [
+    {
+      "event_number": 1,
+      "soc_zone": "Zone 5",
+      "time": "2025-12-01T09:15:34.567Z",
+      "class_name": "Network Activity",
+      "class_uid": 4001,
+      "activity_id": 6,
+      "category_name": "Network Activity",
+      "severity": "High",
+      "device": {
+        "hostname": "DOD-WORKSTATION-142.zone5.defense.mil",
+        "ip": "10.5.23.142",
+        "type": "Desktop"
+      },
+      "src_endpoint": {
+        "ip": "10.5.23.142",
+        "port": 52341,
+        "hostname": "DOD-WORKSTATION-142.zone5.defense.mil"
+      },
+      "dst_endpoint": {
+        "ip": "185.220.101.47",
+        "port": 443,
+        "hostname": "cdn-services-update.com"
+      },
+      "connection_info": {
+        "protocol_name": "TCP",
+        "direction": "Outbound"
+      },
+      "process": {
+        "pid": 7832,
+        "file": {
+          "path": "C:\\Windows\\System32\\rundll32.exe",
+          "name": "rundll32.exe"
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "DEFENSE\\svc_logistics",
+          "uid": "S-1-5-21-1234567890-9876543210-1111222233-5001"
+        }
+      },
+      "observables": [
+        {
+          "name": "c2_connection",
+          "type": "ipv4",
+          "value": "185.220.101.47",
+          "reputation_score": 95,
+          "reputation": "Known malicious - APT28 infrastructure"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone5_001",
+      "enrichments": [
+        {
+          "name": "threat_intel",
+          "value": "IP associated with APT28 (Fancy Bear) C2 infrastructure",
+          "provider": "CISA Known Exploited Vulnerabilities"
+        }
+      ]
+    },
+    {
+      "event_number": 2,
+      "soc_zone": "Zone 5",
+      "time": "2025-12-01T09:16:02.123Z",
+      "class_name": "Process Activity",
+      "class_uid": 1007,
+      "activity_id": 1,
+      "category_name": "System Activity",
+      "severity": "High",
+      "device": {
+        "hostname": "DOD-WORKSTATION-142.zone5.defense.mil",
+        "ip": "10.5.23.142"
+      },
+      "process": {
+        "pid": 4528,
+        "file": {
+          "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "name": "powershell.exe",
+          "hash": {
+            "sha256": "B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2"
+          }
+        },
+        "cmd_line": "powershell.exe -NoP -NonI -W Hidden -Exec Bypass -EncodedCommand JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAAgAEkATwAuAE0AZQBtAG8AcgB5AFMAdAByAGUAYQBtACgA...",
+        "integrity": "System",
+        "parent_process": {
+          "pid": 7832,
+          "file": {
+            "path": "C:\\Windows\\System32\\rundll32.exe",
+            "name": "rundll32.exe"
+          }
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "NT AUTHORITY\\SYSTEM",
+          "uid": "S-1-5-18"
+        }
+      },
+      "observables": [
+        {
+          "name": "encoded_powershell",
+          "type": "process",
+          "value": "powershell.exe -EncodedCommand",
+          "reputation_score": 85,
+          "reputation": "Suspicious - commonly used by malware"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone5_002",
+      "parent_correlation_uid": "attack_chain_zone5_001"
+    },
+    {
+      "event_number": 3,
+      "soc_zone": "Zone 12",
+      "time": "2025-12-01T09:18:45.890Z",
+      "class_name": "Authentication",
+      "class_uid": 3002,
+      "activity_id": 1,
+      "category_name": "Identity & Access Management",
+      "severity": "Medium",
+      "device": {
+        "hostname": "DOD-SERVER-DC01.zone12.defense.mil",
+        "ip": "10.12.10.5",
+        "type": "Domain Controller"
+      },
+      "src_endpoint": {
+        "ip": "10.5.23.142",
+        "port": 52891,
+        "hostname": "DOD-WORKSTATION-142.zone5.defense.mil"
+      },
+      "dst_endpoint": {
+        "ip": "10.12.10.5",
+        "port": 445,
+        "hostname": "DOD-SERVER-DC01.zone12.defense.mil"
+      },
+      "logon": {
+        "type": "Network",
+        "type_id": 3,
+        "process": {
+          "name": "NtLmSsp"
+        },
+        "authentication": {
+          "package": "NTLM"
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "DEFENSE\\svc_logistics",
+          "uid": "S-1-5-21-1234567890-9876543210-1111222233-5001",
+          "account_type": "Service Account"
+        }
+      },
+      "observables": [
+        {
+          "name": "cross_zone_logon",
+          "type": "authentication",
+          "value": "Zone 5 -> Zone 12 lateral movement",
+          "reputation_score": 75,
+          "reputation": "Anomalous - cross-zone authentication"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone12_001",
+      "parent_correlation_uid": "attack_chain_zone5_002",
+      "enrichments": [
+        {
+          "name": "ueba_baseline",
+          "value": "User svc_logistics typically operates only in Zone 5. Cross-zone access to Zone 12 is ANOMALOUS.",
+          "provider": "Internal UEBA System"
+        }
+      ]
+    },
+    {
+      "event_number": 4,
+      "soc_zone": "Zone 12",
+      "time": "2025-12-01T09:18:47.234Z",
+      "class_name": "Process Activity",
+      "class_uid": 1007,
+      "activity_id": 1,
+      "category_name": "System Activity",
+      "severity": "Critical",
+      "device": {
+        "hostname": "DOD-SERVER-DC01.zone12.defense.mil",
+        "ip": "10.12.10.5"
+      },
+      "process": {
+        "pid": 2468,
+        "file": {
+          "path": "C:\\Windows\\PSEXESVC.exe",
+          "name": "PSEXESVC.exe",
+          "hash": {
+            "sha256": "D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2"
+          }
+        },
+        "cmd_line": "C:\\Windows\\PSEXESVC.exe",
+        "integrity": "System",
+        "parent_process": {
+          "pid": 676,
+          "file": {
+            "path": "C:\\Windows\\System32\\services.exe",
+            "name": "services.exe"
+          }
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "NT AUTHORITY\\SYSTEM",
+          "uid": "S-1-5-18"
+        }
+      },
+      "observables": [
+        {
+          "name": "psexec_lateral_movement",
+          "type": "tool",
+          "value": "PsExec detected",
+          "reputation_score": 90,
+          "reputation": "High risk - remote execution tool"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone12_002",
+      "parent_correlation_uid": "attack_chain_zone12_001",
+      "enrichments": [
+        {
+          "name": "mitre_attack",
+          "value": "T1021.002 - Remote Services: SMB/Windows Admin Shares",
+          "provider": "MITRE ATT&CK"
+        }
+      ]
+    },
+    {
+      "event_number": 5,
+      "soc_zone": "Zone 23",
+      "time": "2025-12-01T09:25:12.456Z",
+      "class_name": "Authentication",
+      "class_uid": 3002,
+      "activity_id": 1,
+      "category_name": "Identity & Access Management",
+      "severity": "Medium",
+      "device": {
+        "hostname": "AIRFORCE-SERVER-45.zone23.af.mil",
+        "ip": "10.23.15.45",
+        "type": "Server"
+      },
+      "src_endpoint": {
+        "ip": "10.12.10.5",
+        "port": 53421,
+        "hostname": "DOD-SERVER-DC01.zone12.defense.mil"
+      },
+      "dst_endpoint": {
+        "ip": "10.23.15.45",
+        "port": 445,
+        "hostname": "AIRFORCE-SERVER-45.zone23.af.mil"
+      },
+      "logon": {
+        "type": "Network",
+        "type_id": 3,
+        "process": {
+          "name": "NtLmSsp"
+        },
+        "authentication": {
+          "package": "NTLM"
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "DEFENSE\\svc_logistics",
+          "uid": "S-1-5-21-1234567890-9876543210-1111222233-5001"
+        }
+      },
+      "observables": [
+        {
+          "name": "multi_zone_pivot",
+          "type": "authentication",
+          "value": "Zone 12 -> Zone 23 lateral movement (3rd zone affected)",
+          "reputation_score": 95,
+          "reputation": "Critical - multi-zone compromise"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone23_001",
+      "parent_correlation_uid": "attack_chain_zone12_002",
+      "enrichments": [
+        {
+          "name": "campaign_tracking",
+          "value": "Same credential (svc_logistics) used across 3 zones. High-confidence APT campaign.",
+          "provider": "Threat Hunting Team"
+        }
+      ]
+    },
+    {
+      "event_number": 6,
+      "soc_zone": "Zone 23",
+      "time": "2025-12-01T09:25:45.789Z",
+      "class_name": "Network Activity",
+      "class_uid": 4001,
+      "activity_id": 6,
+      "category_name": "Network Activity",
+      "severity": "High",
+      "device": {
+        "hostname": "AIRFORCE-SERVER-45.zone23.af.mil",
+        "ip": "10.23.15.45"
+      },
+      "src_endpoint": {
+        "ip": "10.23.15.45",
+        "port": 54892,
+        "hostname": "AIRFORCE-SERVER-45.zone23.af.mil"
+      },
+      "dst_endpoint": {
+        "ip": "185.220.101.47",
+        "port": 443,
+        "hostname": "cdn-services-update.com"
+      },
+      "connection_info": {
+        "protocol_name": "TCP",
+        "direction": "Outbound"
+      },
+      "process": {
+        "pid": 8912,
+        "file": {
+          "path": "C:\\Windows\\System32\\rundll32.exe",
+          "name": "rundll32.exe"
+        }
+      },
+      "actor": {
+        "user": {
+          "name": "NT AUTHORITY\\SYSTEM",
+          "uid": "S-1-5-18"
+        }
+      },
+      "observables": [
+        {
+          "name": "c2_connection_zone23",
+          "type": "ipv4",
+          "value": "185.220.101.47",
+          "reputation_score": 95,
+          "reputation": "SAME C2 IP as Zone 5 initial compromise"
+        }
+      ],
+      "correlation_uid": "attack_chain_zone23_002",
+      "parent_correlation_uid": "attack_chain_zone23_001",
+      "enrichments": [
+        {
+          "name": "ioc_correlation",
+          "value": "C2 IP 185.220.101.47 now observed in 2 zones (Zone 5 and Zone 23). Coordinated attack confirmed.",
+          "provider": "Threat Intelligence Platform"
+        }
+      ]
+    }
+  ],
+  "correlation_analysis": {
+    "attack_summary": "Multi-zone lateral movement attack affecting 3 SOCs",
+    "initial_compromise": {
+      "zone": "Zone 5",
+      "device": "DOD-WORKSTATION-142.zone5.defense.mil",
+      "time": "2025-12-01T09:15:34Z"
+    },
+    "attack_chain": [
+      {
+        "step": 1,
+        "action": "Initial C2 Connection",
+        "zone": "Zone 5",
+        "event_number": 1,
+        "time": "09:15:34"
+      },
+      {
+        "step": 2,
+        "action": "PowerShell Payload Execution",
+        "zone": "Zone 5",
+        "event_number": 2,
+        "time": "09:16:02"
+      },
+      {
+        "step": 3,
+        "action": "Lateral Movement to Zone 12",
+        "zone": "Zone 12",
+        "event_number": 3,
+        "time": "09:18:45"
+      },
+      {
+        "step": 4,
+        "action": "PsExec Deployment on Domain Controller",
+        "zone": "Zone 12",
+        "event_number": 4,
+        "time": "09:18:47"
+      },
+      {
+        "step": 5,
+        "action": "Lateral Movement to Zone 23",
+        "zone": "Zone 23",
+        "event_number": 5,
+        "time": "09:25:12"
+      },
+      {
+        "step": 6,
+        "action": "C2 Beacon from Zone 23",
+        "zone": "Zone 23",
+        "event_number": 6,
+        "time": "09:25:45"
+      }
+    ],
+    "common_iocs": {
+      "c2_ip": "185.220.101.47",
+      "c2_domain": "cdn-services-update.com",
+      "compromised_credential": "DEFENSE\\svc_logistics",
+      "lateral_movement_tool": "PsExec",
+      "attack_pattern": "Zone 5 → Zone 12 (DC) → Zone 23"
+    },
+    "ocsf_correlation_queries": {
+      "query_1_find_all_c2_connections": {
+        "description": "Find all systems across all 30 SOCs connecting to attacker C2",
+        "ocsf_query": "class_name='Network Activity' AND dst_endpoint.ip='185.220.101.47'",
+        "expected_results": [
+          "DOD-WORKSTATION-142.zone5.defense.mil",
+          "AIRFORCE-SERVER-45.zone23.af.mil"
+        ]
+      },
+      "query_2_track_compromised_user": {
+        "description": "Track svc_logistics account usage across all zones",
+        "ocsf_query": "actor.user.name='DEFENSE\\\\svc_logistics' AND class_name='Authentication'",
+        "expected_results": [
+          "Zone 5 -> Zone 12 logon at 09:18:45",
+          "Zone 12 -> Zone 23 logon at 09:25:12"
+        ]
+      },
+      "query_3_detect_psexec_usage": {
+        "description": "Find all PsExec executions across infrastructure",
+        "ocsf_query": "class_name='Process Activity' AND process.file.name='PSEXESVC.exe'",
+        "expected_results": [
+          "DOD-SERVER-DC01.zone12.defense.mil at 09:18:47"
+        ]
+      },
+      "query_4_reconstruct_attack_chain": {
+        "description": "Build complete timeline using correlation UIDs",
+        "ocsf_query": "correlation_uid LIKE 'attack_chain_%' ORDER BY time ASC",
+        "expected_results": "6 events in chronological order showing full attack path"
+      }
+    },
+    "detection_without_ocsf": {
+      "zone_5_sees": "Outbound connection to suspicious IP",
+      "zone_12_sees": "Network logon from Zone 5",
+      "zone_23_sees": "Network logon from Zone 12",
+      "correlation_result": "FAILURE - 3 isolated incidents, no connection made",
+      "detection_time": "3-7 days (after manual investigation)"
+    },
+    "detection_with_ocsf": {
+      "unified_view": "Same C2 IP (185.220.101.47) + same user (svc_logistics) + PsExec tool",
+      "correlation_result": "SUCCESS - Attack chain reconstructed in real-time",
+      "detection_time": "10 minutes (automated correlation)",
+      "containment_actions": [
+        "Block C2 IP 185.220.101.47 at perimeter firewalls (all 30 zones)",
+        "Disable account DEFENSE\\svc_logistics immediately",
+        "Isolate 3 affected systems for forensics",
+        "Hunt for PsExec artifacts in remaining 27 zones"
+      ]
+    }
+  },
+  "siem_correlation_rule_example": {
+    "rule_name": "Multi-Zone Lateral Movement Detection",
+    "rule_description": "Detects when same user authenticates to 3+ different zones within 30-minute window",
+    "rule_logic_splunk": "index=ocsf class_name=\"Authentication\" | stats dc(device.hostname) as unique_zones, values(device.hostname) as affected_hosts by actor.user.name, _time span=30m | where unique_zones >= 3 | eval alert_severity=\"CRITICAL - Multi-Zone Compromise\"",
+    "rule_logic_elastic_eql": "sequence by actor.user.name with maxspan=30m [authentication where logon.type_id == 3] by dst_endpoint.ip [authentication where logon.type_id == 3] by dst_endpoint.ip [authentication where logon.type_id == 3] by dst_endpoint.ip",
+    "rule_output": {
+      "alert_title": "CRITICAL: Multi-Zone Lateral Movement - svc_logistics",
+      "affected_user": "DEFENSE\\svc_logistics",
+      "zones_compromised": ["Zone 5", "Zone 12", "Zone 23"],
+      "first_seen": "2025-12-01T09:15:34Z",
+      "last_seen": "2025-12-01T09:25:45Z",
+      "recommended_actions": [
+        "Disable user account immediately",
+        "Block C2 IP at all perimeter firewalls",
+        "Isolate affected systems",
+        "Hunt for lateral movement indicators in remaining zones"
+      ]
+    }
+  },
+  "demo_talking_points": [
+    "WITHOUT OCSF: Zone 5 sees 'suspicious connection', Zone 12 sees 'network logon', Zone 23 sees another 'network logon'. NO CONNECTION MADE. Takes 3-7 days to manually correlate.",
+    "WITH OCSF: Same user name (actor.user.name), same C2 IP (dst_endpoint.ip), same attack pattern. IMMEDIATE CORRELATION across all 3 zones. Detection in 10 minutes.",
+    "The OCSF correlation_uid field links related events across zones. Event 1 in Zone 5 → Event 3 in Zone 12 → Event 5 in Zone 23 = one continuous attack chain.",
+    "One query across all 30 SOCs: 'Show me all systems connecting to 185.220.101.47' → Instant visibility into campaign scope.",
+    "This is the power of standardization: Same field names = instant correlation. Different formats = blind spots."
+  ]
+}
