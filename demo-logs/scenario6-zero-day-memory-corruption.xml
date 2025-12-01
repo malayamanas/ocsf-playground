@@ -1,0 +1,371 @@
+<!--
+SCENARIO 6: Zero-Day Exploit - Memory Corruption in Government Software
+Timeline: Nation-state actor exploits unknown vulnerability in proprietary defense software
+Threat Level: CRITICAL - Zero-Day Exploit, Nation-State APT, Code Execution
+OCSF Mapping: Vulnerability Finding, Process Activity, Memory Activity, Network Activity
+Attribution: TTPs consistent with APT28 (Fancy Bear) / APT41
+CVE: None (Zero-Day, not yet disclosed)
+Target: Custom defense logistics management system "DefenseTrack v3.2"
+-->
+
+<!-- EVENT 1: Sysmon Event ID 7 - Suspicious DLL Load (Exploit Payload Stage 1) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>7</EventID>
+    <Version>3</Version>
+    <Level>4</Level>
+    <Task>7</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:45.123Z" />
+    <EventRecordID>198234</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1055.001,technique_name=Process Injection DLL Injection</Data>
+    <Data Name="UtcTime">2025-12-01 03:12:45.123</Data>
+    <Data Name="ProcessGuid">{G7H8I9J0-2345-6FGH-7890-123456789DEF}</Data>
+    <Data Name="ProcessId">4628</Data>
+    <Data Name="Image">C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data Name="ImageLoaded">C:\Windows\Temp\msvcr120_compat.dll</Data>
+    <Data Name="FileVersion">-</Data>
+    <Data Name="Description">-</Data>
+    <Data Name="Product">-</Data>
+    <Data Name="Company">-</Data>
+    <Data Name="OriginalFileName">-</Data>
+    <Data Name="Hashes">SHA256=A9B8C7D6E5F4A3B2C1D0E9F8A7B6C5D4E3F2A1B0C9D8E7F6A5B4C3D2E1F0A9B8,MD5=F0E9D8C7B6A5948372615E4D3C2B1A09,IMPHASH=1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D</Data>
+    <Data Name="Signed">false</Data>
+    <Data Name="Signature">-</Data>
+    <Data Name="SignatureStatus">Unsigned</Data>
+    <Data Name="User">DEFENSE\logistics.admin</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 2: Sysmon Event ID 8 - Remote Thread Creation (Shellcode Injection) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>8</EventID>
+    <Version>2</Version>
+    <Level>4</Level>
+    <Task>8</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:45.456Z" />
+    <EventRecordID>198235</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1055.002,technique_name=Process Injection Portable Executable Injection</Data>
+    <Data Name="UtcTime">2025-12-01 03:12:45.456</Data>
+    <Data Name="SourceProcessGuid">{G7H8I9J0-2345-6FGH-7890-123456789DEF}</Data>
+    <Data Name="SourceProcessId">4628</Data>
+    <Data Name="SourceImage">C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data Name="TargetProcessGuid">{G7H8I9J0-2345-6FGH-7890-SVCHOST123456}</Data>
+    <Data Name="TargetProcessId">1892</Data>
+    <Data Name="TargetImage">C:\Windows\System32\svchost.exe</Data>
+    <Data Name="NewThreadId">6248</Data>
+    <Data Name="StartAddress">0x00007FF8B2A40000</Data>
+    <Data Name="StartModule">C:\Windows\Temp\msvcr120_compat.dll</Data>
+    <Data Name="StartFunction">-</Data>
+    <Data Name="SourceUser">DEFENSE\logistics.admin</Data>
+    <Data Name="TargetUser">NT AUTHORITY\SYSTEM</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 3: Windows Security Event ID 1116 - Windows Defender Detection (Blocked Exploit Attempt) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Windows Defender" Guid="{11CD958A-C507-4EF3-B3F2-5FD9DFBD2C78}" />
+    <EventID>1116</EventID>
+    <Version>0</Version>
+    <Level>3</Level>
+    <Task>0</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:45.567Z" />
+    <EventRecordID>567234</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="2564" ThreadID="4128" />
+    <Channel>Microsoft-Windows-Windows Defender/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="Product Name">Microsoft Defender Antivirus</Data>
+    <Data Name="Product Version">4.18.24090.9</Data>
+    <Data Name="Detection ID">{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Data>
+    <Data Name="Detection Time">2025-12-01T03:12:45.567Z</Data>
+    <Data Name="Threat Name">Exploit:Win64/CVE-2025-XXXXX.A!dha</Data>
+    <Data Name="Severity Name">Severe</Data>
+    <Data Name="Category Name">Exploit</Data>
+    <Data Name="Path">file:_C:\Windows\Temp\msvcr120_compat.dll</Data>
+    <Data Name="Detection User">DEFENSE\logistics.admin</Data>
+    <Data Name="Process Name">C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data Name="Security intelligence Version">1.409.123.0</Data>
+    <Data Name="Engine Version">1.1.24090.3</Data>
+    <Data Name="Action Name">Quarantine</Data>
+    <Data Name="Error Code">0x80508023</Data>
+    <Data Name="Error Description">The program could not find the malware and other potentially unwanted software on this computer.</Data>
+    <Data Name="Status Code">1</Data>
+    <Data Name="Status Description">Quarantine failed. Manual remediation required.</Data>
+    <Data Name="Additional Actions String">Behavior:Win64/Exploit.MemoryCorruption.A</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 4: Sysmon Event ID 1 - Privilege Escalation via Exploited Process -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>1</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>1</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:46.789Z" />
+    <EventRecordID>198236</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1068,technique_name=Exploitation for Privilege Escalation</Data>
+    <Data Name="UtcTime">2025-12-01 03:12:46.789</Data>
+    <Data Name="ProcessGuid">{G7H8I9J0-2345-6FGH-7890-ESCALATEDPROC}</Data>
+    <Data Name="ProcessId">7824</Data>
+    <Data Name="Image">C:\Windows\System32\cmd.exe</Data>
+    <Data Name="FileVersion">10.0.19041.1 (WinBuild.160101.0800)</Data>
+    <Data Name="Description">Windows Command Processor</Data>
+    <Data Name="Product">Microsoft Windows Operating System</Data>
+    <Data Name="Company">Microsoft Corporation</Data>
+    <Data Name="OriginalFileName">Cmd.Exe</Data>
+    <Data Name="CommandLine">cmd.exe /c "whoami /priv && net localgroup administrators DEFENSE\logistics.admin /add"</Data>
+    <Data Name="CurrentDirectory">C:\Windows\System32\</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+    <Data Name="LogonGuid">{G7H8I9J0-2345-6FGH-1111-SYSTEMLOGON00}</Data>
+    <Data Name="LogonId">0x3e7</Data>
+    <Data Name="TerminalSessionId">0</Data>
+    <Data Name="IntegrityLevel">System</Data>
+    <Data Name="Hashes">SHA256=B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2</Data>
+    <Data Name="ParentProcessGuid">{G7H8I9J0-2345-6FGH-7890-SVCHOST123456}</Data>
+    <Data Name="ParentProcessId">1892</Data>
+    <Data Name="ParentImage">C:\Windows\System32\svchost.exe</Data>
+    <Data Name="ParentCommandLine">C:\Windows\System32\svchost.exe -k netsvcs -p</Data>
+    <Data Name="ParentUser">NT AUTHORITY\SYSTEM</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 5: Windows Security Event ID 4732 - Member Added to Security-Enabled Local Group -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Security-Auditing" Guid="{54849625-5478-4994-A5BA-3E3B0328C30D}" />
+    <EventID>4732</EventID>
+    <Version>0</Version>
+    <Level>0</Level>
+    <Task>13826</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8020000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:47.123Z" />
+    <EventRecordID>8912345</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="676" ThreadID="4892" />
+    <Channel>Security</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security />
+  </System>
+  <EventData>
+    <Data Name="MemberName">CN=logistics.admin,CN=Users,DC=defense,DC=mil</Data>
+    <Data Name="MemberSid">S-1-5-21-4567890123-9876543210-5555666677-1207</Data>
+    <Data Name="TargetUserName">Administrators</Data>
+    <Data Name="TargetDomainName">PENTAGON-LOGISTICS-12</Data>
+    <Data Name="TargetSid">S-1-5-32-544</Data>
+    <Data Name="SubjectUserSid">S-1-5-18</Data>
+    <Data Name="SubjectUserName">PENTAGON-LOGISTICS-12$</Data>
+    <Data Name="SubjectDomainName">DEFENSE</Data>
+    <Data Name="SubjectLogonId">0x3e7</Data>
+    <Data Name="PrivilegeList">-</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 6: Sysmon Event ID 3 - Post-Exploitation C2 Beacon -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>3</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>3</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:13:00.456Z" />
+    <EventRecordID>198237</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1071.001,technique_name=Application Layer Protocol Web Protocols</Data>
+    <Data Name="UtcTime">2025-12-01 03:13:00.456</Data>
+    <Data Name="ProcessGuid">{G7H8I9J0-2345-6FGH-7890-ESCALATEDPROC}</Data>
+    <Data Name="ProcessId">7824</Data>
+    <Data Name="Image">C:\Windows\System32\rundll32.exe</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+    <Data Name="Protocol">tcp</Data>
+    <Data Name="Initiated">true</Data>
+    <Data Name="SourceIsIpv6">false</Data>
+    <Data Name="SourceIp">10.45.67.12</Data>
+    <Data Name="SourceHostname">PENTAGON-LOGISTICS-12.defense.mil</Data>
+    <Data Name="SourcePort">53892</Data>
+    <Data Name="SourcePortName">-</Data>
+    <Data Name="DestinationIsIpv6">false</Data>
+    <Data Name="DestinationIp">45.141.215.89</Data>
+    <Data Name="DestinationHostname">cdn.windowsupdates-verification.com</Data>
+    <Data Name="DestinationPort">443</Data>
+    <Data Name="DestinationPortName">https</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 7: Sysmon Event ID 11 - Exploit Artifacts Written to Disk -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>11</EventID>
+    <Version>2</Version>
+    <Level>4</Level>
+    <Task>11</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:44.890Z" />
+    <EventRecordID>198233</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1203,technique_name=Exploitation for Client Execution</Data>
+    <Data Name="UtcTime">2025-12-01 03:12:44.890</Data>
+    <Data Name="ProcessGuid">{G7H8I9J0-2345-6FGH-7890-123456789DEF}</Data>
+    <Data Name="ProcessId">4628</Data>
+    <Data Name="Image">C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data Name="TargetFilename">C:\Windows\Temp\msvcr120_compat.dll</Data>
+    <Data Name="CreationUtcTime">2025-12-01 03:12:44.890</Data>
+    <Data Name="User">DEFENSE\logistics.admin</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 8: Windows Application Error Event ID 1000 - Application Crash (Exploitation Indicator) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Application Error" />
+    <EventID Qualifiers="0">1000</EventID>
+    <Version>0</Version>
+    <Level>2</Level>
+    <Task>100</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x80000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:43.567Z" />
+    <EventRecordID>234567</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="0" ThreadID="0" />
+    <Channel>Application</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security />
+  </System>
+  <EventData>
+    <Data>DefenseTrack.exe</Data>
+    <Data>3.2.0.1245</Data>
+    <Data>65a1b2c3</Data>
+    <Data>ntdll.dll</Data>
+    <Data>10.0.19041.3758</Data>
+    <Data>f8d2e1a9</Data>
+    <Data>c0000374</Data>
+    <Data>00000000000a2f3c</Data>
+    <Data>121c</Data>
+    <Data>01db3f4e8a2c1234</Data>
+    <Data>C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data>C:\Windows\SYSTEM32\ntdll.dll</Data>
+    <Data>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Data>
+    <Data>0</Data>
+    <Data></Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 9: Windows Reliability Event ID 1001 - Application Fault Bucket (Detailed Crash Info) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Windows Error Reporting" />
+    <EventID Qualifiers="0">1001</EventID>
+    <Version>0</Version>
+    <Level>4</Level>
+    <Task>0</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x80000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:43.789Z" />
+    <EventRecordID>345678</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3256" ThreadID="4892" />
+    <Channel>Application</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security />
+  </System>
+  <EventData>
+    <Data>APPCRASH</Data>
+    <Data>DefenseTrack.exe</Data>
+    <Data>3.2.0.1245</Data>
+    <Data>65a1b2c3</Data>
+    <Data>ntdll.dll</Data>
+    <Data>10.0.19041.3758</Data>
+    <Data>f8d2e1a9</Data>
+    <Data>c0000374</Data>
+    <Data>00000000000a2f3c</Data>
+    <Data>1234567890abcdef</Data>
+    <Data>0</Data>
+    <Data>DefenseTrack.exe_heap_corruption_c0000374_ntdll.dll_vulnerability</Data>
+    <Data>Heap corruption detected in buffer overflow scenario. Possible memory safety vulnerability in input validation routine.</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 10: Sysmon Event ID 25 - Process Tampering (Image Integrity) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>25</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>25</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T03:12:45.234Z" />
+    <EventRecordID>198234</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="3892" ThreadID="5124" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>PENTAGON-LOGISTICS-12.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1055,technique_name=Process Injection</Data>
+    <Data Name="UtcTime">2025-12-01 03:12:45.234</Data>
+    <Data Name="ProcessGuid">{G7H8I9J0-2345-6FGH-7890-123456789DEF}</Data>
+    <Data Name="ProcessId">4628</Data>
+    <Data Name="Image">C:\Program Files\DefenseTrack\DefenseTrack.exe</Data>
+    <Data Name="Type">Image is replaced</Data>
+    <Data Name="User">DEFENSE\logistics.admin</Data>
+  </EventData>
+</Event>
