@@ -13,12 +13,55 @@ logger = logging.getLogger("backend")
 
 
 def get_analyze_system_prompt_factory(ocsf_version: OcsfVersion, ocsf_event_name: str) -> Callable[[Dict[str, Any]], SystemMessage]:
-    
+
     def factory(input_entry: str) -> SystemMessage:
         event_schema = get_ocsf_event_schema(ocsf_version, ocsf_event_name, [])
-        event_schema_simplified  = json.dumps(event_schema.to_dict(), indent=4) if event_schema else ""
-        object_schemas = get_ocsf_object_schemas(ocsf_version, ocsf_event_name, [])
-        object_schemas_simplified = json.dumps([obj.to_dict() for obj in object_schemas], indent=4)
+
+        # For v1.1.0, use the full schema (cached, optimized for performance)
+        # For other versions, use a summarized schema to avoid prompt length issues
+        if ocsf_version == OcsfVersion.V1_1_0:
+            event_schema_simplified  = json.dumps(event_schema.to_dict(), indent=4) if event_schema else ""
+            object_schemas = get_ocsf_object_schemas(ocsf_version, ocsf_event_name, [])
+            object_schemas_simplified = json.dumps([obj.to_dict() for obj in object_schemas], indent=4)
+        else:
+            # Provide a lightweight summary with just attribute names and types
+            if event_schema:
+                event_schema_summary = {
+                    "name": event_schema.name,
+                    "description": event_schema.description,
+                    "attributes": {
+                        attr_name: {
+                            "type": attr.type,
+                            "description": attr.description[:100] + "..." if len(attr.description) > 100 else attr.description,
+                            "requirement": attr.requirement,
+                            "is_array": attr.is_array
+                        }
+                        for attr_name, attr in event_schema.attributes.items()
+                    }
+                }
+            else:
+                event_schema_summary = {}
+            event_schema_simplified = json.dumps(event_schema_summary, indent=4)
+
+            # Provide lightweight object schema summaries
+            object_schemas = get_ocsf_object_schemas(ocsf_version, ocsf_event_name, [])
+            object_schemas_summary = [
+                {
+                    "name": obj.name,
+                    "description": obj.description[:100] + "..." if len(obj.description) > 100 else obj.description,
+                    "attributes": {
+                        attr_name: {
+                            "type": attr.type,
+                            "requirement": attr.requirement
+                        }
+                        for attr_name, attr in obj.attributes.items()
+                    }
+                }
+                for obj in object_schemas
+            ]
+            object_schemas_simplified = json.dumps(object_schemas_summary, indent=4)
+
+            logger.info(f"Using summarized schema for OCSF v{ocsf_version.value} to reduce prompt size")
 
         return SystemMessage(
             content=analyze_prompt_template.format(
@@ -29,7 +72,7 @@ def get_analyze_system_prompt_factory(ocsf_version: OcsfVersion, ocsf_event_name
                 input_entry=input_entry
             )
         )
-    
+
     return factory
 
 def get_extract_system_prompt_factory(ocsf_version: OcsfVersion, ocsf_event_name: str) -> Callable[[Dict[str, Any]], SystemMessage]:
