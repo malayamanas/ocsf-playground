@@ -1,0 +1,217 @@
+<!--
+SCENARIO 2: APT (Advanced Persistent Threat) - Lateral Movement & C2 Communication
+Timeline: External attacker compromises workstation, establishes C2, moves laterally using PsExec
+Threat Level: CRITICAL - APT Activity, Command & Control, Lateral Movement
+OCSF Mapping: Network Activity, Process Activity, Authentication
+Attribution: TTPs match APT29 (Cozy Bear)
+-->
+
+<!-- EVENT 1: Sysmon Event ID 3 - Network Connection to C2 Server -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>3</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>3</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T09:15:34.567Z" />
+    <EventRecordID>734512</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="2548" ThreadID="4128" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>DOD-WORKSTATION-142.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1071.001,technique_name=Application Layer Protocol Web Protocols</Data>
+    <Data Name="UtcTime">2025-12-01 09:15:34.567</Data>
+    <Data Name="ProcessGuid">{B2C3D4E5-6789-0ABC-DEF1-234567890ABC}</Data>
+    <Data Name="ProcessId">7832</Data>
+    <Data Name="Image">C:\Windows\System32\rundll32.exe</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+    <Data Name="Protocol">tcp</Data>
+    <Data Name="Initiated">true</Data>
+    <Data Name="SourceIsIpv6">false</Data>
+    <Data Name="SourceIp">10.23.45.142</Data>
+    <Data Name="SourceHostname">DOD-WORKSTATION-142.defense.mil</Data>
+    <Data Name="SourcePort">52341</Data>
+    <Data Name="SourcePortName">-</Data>
+    <Data Name="DestinationIsIpv6">false</Data>
+    <Data Name="DestinationIp">185.220.101.47</Data>
+    <Data Name="DestinationHostname">cdn-services-update.com</Data>
+    <Data Name="DestinationPort">443</Data>
+    <Data Name="DestinationPortName">https</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 2: Sysmon Event ID 1 - Suspicious PowerShell with Encoded Command -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>1</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>1</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T09:16:02.123Z" />
+    <EventRecordID>734513</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="2548" ThreadID="4128" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>DOD-WORKSTATION-142.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1059.001,technique_name=PowerShell</Data>
+    <Data Name="UtcTime">2025-12-01 09:16:02.123</Data>
+    <Data Name="ProcessGuid">{B2C3D4E5-6789-0ABC-DEF1-555566667777}</Data>
+    <Data Name="ProcessId">4528</Data>
+    <Data Name="Image">C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe</Data>
+    <Data Name="FileVersion">10.0.19041.1 (WinBuild.160101.0800)</Data>
+    <Data Name="Description">Windows PowerShell</Data>
+    <Data Name="Product">Microsoft Windows Operating System</Data>
+    <Data Name="Company">Microsoft Corporation</Data>
+    <Data Name="OriginalFileName">PowerShell.EXE</Data>
+    <Data Name="CommandLine">powershell.exe -NoP -NonI -W Hidden -Exec Bypass -EncodedCommand JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAAgAEkATwAuAE0AZQBtAG8AcgB5AFMAdAByAGUAYQBtACgALABbAEMAbwBuAHYAZQByAHQAXQA6ADoARgByAG8AbQBCAGEAcwBlADYANABTAHQAcgBpAG4AZwAoACIASAA0AHMASQBBAEEAQQBBAEEAQQBBAEEAQQBLADEAVwBhADAALwBiAE0AQgBBAC8AdwA9ACIAKQApADsASQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABJAE8ALgBTAHQAcgBlAGEAbQBSAGUAYQBkAGUAcgAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABJAE8ALgBDAG8AbQBwAHIAZQBzAHMAaQBvAG4ALgBHAHoAaQBwAFMAdAByAGUAYQBtACgAJABzACwAWwBJAE8ALgBDAG8AbQBwAHIAZQBzAHMAaQBvAG4ALgBDAG8AbQBwAHIAZQBzAHMAaQBvAG4ATQBvAGQAZQBdADoAOgBEAGUAYwBvAG0AcAByAGUAcwBzACkAKQApAC4AUgBlAGEAZABUAG8ARQBuAGQAKAApAA==</Data>
+    <Data Name="CurrentDirectory">C:\Windows\system32\</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+    <Data Name="LogonGuid">{B2C3D4E5-6789-0ABC-1111-888899990000}</Data>
+    <Data Name="LogonId">0x3E7</Data>
+    <Data Name="TerminalSessionId">0</Data>
+    <Data Name="IntegrityLevel">System</Data>
+    <Data Name="Hashes">SHA256=A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A1B2</Data>
+    <Data Name="ParentProcessGuid">{B2C3D4E5-6789-0ABC-DEF1-234567890ABC}</Data>
+    <Data Name="ParentProcessId">7832</Data>
+    <Data Name="ParentImage">C:\Windows\System32\rundll32.exe</Data>
+    <Data Name="ParentCommandLine">rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump</Data>
+    <Data Name="ParentUser">NT AUTHORITY\SYSTEM</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 3: Windows Security Event ID 4624 - Lateral Movement (Network Logon via PsExec) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Security-Auditing" Guid="{54849625-5478-4994-A5BA-3E3B0328C30D}" />
+    <EventID>4624</EventID>
+    <Version>2</Version>
+    <Level>0</Level>
+    <Task>12544</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8020000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T09:18:45.890Z" />
+    <EventRecordID>1245678</EventRecordID>
+    <Correlation ActivityID="{C3D4E5F6-7890-1ABC-DEF2-345678901BCD}" />
+    <Execution ProcessID="676" ThreadID="1024" />
+    <Channel>Security</Channel>
+    <Computer>DOD-SERVER-DC01.defense.mil</Computer>
+    <Security />
+  </System>
+  <EventData>
+    <Data Name="SubjectUserSid">S-1-5-18</Data>
+    <Data Name="SubjectUserName">DOD-SERVER-DC01$</Data>
+    <Data Name="SubjectDomainName">DEFENSE</Data>
+    <Data Name="SubjectLogonId">0x3e7</Data>
+    <Data Name="TargetUserSid">S-1-5-21-9876543210-1234567890-9999888877-500</Data>
+    <Data Name="TargetUserName">Administrator</Data>
+    <Data Name="TargetDomainName">DEFENSE</Data>
+    <Data Name="TargetLogonId">0xABC123</Data>
+    <Data Name="LogonType">3</Data>
+    <Data Name="LogonProcessName">NtLmSsp </Data>
+    <Data Name="AuthenticationPackageName">NTLM</Data>
+    <Data Name="WorkstationName">DOD-WORKSTATION-142</Data>
+    <Data Name="LogonGuid">{00000000-0000-0000-0000-000000000000}</Data>
+    <Data Name="TransmittedServices">-</Data>
+    <Data Name="LmPackageName">NTLM V2</Data>
+    <Data Name="KeyLength">128</Data>
+    <Data Name="ProcessId">0x0</Data>
+    <Data Name="ProcessName">-</Data>
+    <Data Name="IpAddress">10.23.45.142</Data>
+    <Data Name="IpPort">52891</Data>
+    <Data Name="ImpersonationLevel">%%1833</Data>
+    <Data Name="RestrictedAdminMode">-</Data>
+    <Data Name="TargetOutboundUserName">-</Data>
+    <Data Name="TargetOutboundDomainName">-</Data>
+    <Data Name="VirtualAccount">%%1843</Data>
+    <Data Name="TargetLinkedLogonId">0x0</Data>
+    <Data Name="ElevatedToken">%%1842</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 4: Sysmon Event ID 1 - PsExec Service Installation (Lateral Movement Tool) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>1</EventID>
+    <Version>5</Version>
+    <Level>4</Level>
+    <Task>1</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T09:18:47.234Z" />
+    <EventRecordID>856234</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="1856" ThreadID="2912" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>DOD-SERVER-DC01.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1021.002,technique_name=Remote Services SMB/Windows Admin Shares</Data>
+    <Data Name="UtcTime">2025-12-01 09:18:47.234</Data>
+    <Data Name="ProcessGuid">{D4E5F6A7-8901-2BCD-EF34-567890123DEF}</Data>
+    <Data Name="ProcessId">2468</Data>
+    <Data Name="Image">C:\Windows\PSEXESVC.exe</Data>
+    <Data Name="FileVersion">2.34</Data>
+    <Data Name="Description">PsExec Service</Data>
+    <Data Name="Product">Sysinternals PsExec</Data>
+    <Data Name="Company">Sysinternals - www.sysinternals.com</Data>
+    <Data Name="OriginalFileName">psexesvc.exe</Data>
+    <Data Name="CommandLine">C:\Windows\PSEXESVC.exe</Data>
+    <Data Name="CurrentDirectory">C:\Windows\system32\</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+    <Data Name="LogonGuid">{D4E5F6A7-8901-2BCD-1111-AABBCCDDEE00}</Data>
+    <Data Name="LogonId">0x3e7</Data>
+    <Data Name="TerminalSessionId">0</Data>
+    <Data Name="IntegrityLevel">System</Data>
+    <Data Name="Hashes">SHA256=D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2</Data>
+    <Data Name="ParentProcessGuid">{D4E5F6A7-8901-2BCD-EF34-FFFFFFFFFFFF}</Data>
+    <Data Name="ParentProcessId">676</Data>
+    <Data Name="ParentImage">C:\Windows\System32\services.exe</Data>
+    <Data Name="ParentCommandLine">C:\Windows\system32\services.exe</Data>
+    <Data Name="ParentUser">NT AUTHORITY\SYSTEM</Data>
+  </EventData>
+</Event>
+
+<!-- EVENT 5: Sysmon Event ID 13 - Registry Persistence (Run Key Modification) -->
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+    <EventID>13</EventID>
+    <Version>2</Version>
+    <Level>4</Level>
+    <Task>13</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8000000000000000</Keywords>
+    <TimeCreated SystemTime="2025-12-01T09:19:15.678Z" />
+    <EventRecordID>734514</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="2548" ThreadID="4128" />
+    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+    <Computer>DOD-WORKSTATION-142.defense.mil</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <EventData>
+    <Data Name="RuleName">technique_id=T1547.001,technique_name=Boot or Logon Autostart Execution Registry Run Keys</Data>
+    <Data Name="EventType">SetValue</Data>
+    <Data Name="UtcTime">2025-12-01 09:19:15.678</Data>
+    <Data Name="ProcessGuid">{B2C3D4E5-6789-0ABC-DEF1-999988887777}</Data>
+    <Data Name="ProcessId">5124</Data>
+    <Data Name="Image">C:\Windows\System32\reg.exe</Data>
+    <Data Name="TargetObject">HKLM\Software\Microsoft\Windows\CurrentVersion\Run\WindowsUpdateService</Data>
+    <Data Name="Details">C:\Windows\System32\svchost.exe -k netsvcs -p -s UpdateOrchestrator</Data>
+    <Data Name="User">NT AUTHORITY\SYSTEM</Data>
+  </EventData>
+</Event>
