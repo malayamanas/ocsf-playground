@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SelectProps } from '@cloudscape-design/components';
-import { OcsfCategoryEnum, TransformLanguageEnum } from '../generated-api-client';
+import { OcsfCategoryEnum, OcsfVersionEnum, TransformLanguageEnum } from '../generated-api-client';
 import { createTransformerLogic } from '../utils/transformerClient';
 import { ExtractionPattern, Transformer } from '../utils/types';
 
@@ -15,7 +15,8 @@ export interface TransformerState {
 interface TransformerStateProps {
   logs: string[];
   selectedLogIds: string[];
-  categoryValue?: OcsfCategoryEnum;
+  categoryValue?: string;
+  versionValue?: OcsfVersionEnum;
   extractionPatterns: ExtractionPattern[];
   language: SelectProps.Option;
 }
@@ -24,6 +25,7 @@ const useTransformerState = ({
   logs,
   selectedLogIds,
   categoryValue,
+  versionValue,
   extractionPatterns,
   language,
 }: TransformerStateProps): TransformerState => {
@@ -55,10 +57,11 @@ const useTransformerState = ({
 
       // Call the transformer client function
       const response = await createTransformerLogic(
-        transformLanguage, 
-        categoryValue, 
+        transformLanguage,
+        categoryValue,
         selectedLogEntry,
-        extractionPatterns
+        extractionPatterns,
+        versionValue
       );
       
       // Update state with the response

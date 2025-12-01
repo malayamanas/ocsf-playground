@@ -55,18 +55,20 @@ const OcsfPlaygroundPage = () => {
     selectedLogIds: logsState.selectedLogIds
   });
   
-  // Use the entities state hook with access to logs state and category
+  // Use the entities state hook with access to logs state, category, and version
   const entitiesState = useEntitiesState({
     logs: logsState.logs,
     selectedLogIds: logsState.selectedLogIds,
-    categoryValue: categoryState.category.value as OcsfCategoryEnum
+    categoryValue: categoryState.category.value,
+    versionValue: categoryState.version.value as any
   });
-  
-  // Use the transformer state hook with access to logs, category, and entities
+
+  // Use the transformer state hook with access to logs, category, version, and entities
   const transformerState = useTransformerState({
     logs: logsState.logs,
     selectedLogIds: logsState.selectedLogIds,
-    categoryValue: categoryState.category.value as OcsfCategoryEnum,
+    categoryValue: categoryState.category.value,
+    versionValue: categoryState.version.value as any,
     extractionPatterns: entitiesState.extractionPatterns,
     language: entitiesState.language
   });

@@ -7,13 +7,11 @@ paths:
   /api/schema/:
     get:
       operationId: api_schema_retrieve
-      description: 'OpenApi3 schema for this API. Format can be selected via content
-        negotiation.
-
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
 
         - YAML: application/vnd.oai.openapi
-
-        - JSON: application/vnd.oai.openapi+json'
+        - JSON: application/vnd.oai.openapi+json
       parameters:
       - in: query
         name: format
@@ -128,6 +126,10 @@ paths:
           - zh-hant
       tags:
       - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -148,6 +150,50 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /auth/diagnostic/:
+    get:
+      operationId: auth_diagnostic_retrieve
+      description: |-
+        Diagnostic endpoint to check authentication configuration.
+        Access at: http://127.0.0.1:8000/auth/diagnostic/
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /transformer/categorize/:
+    post:
+      operationId: transformer_categorize_create
+      description: Version-flexible categorization endpoint
+      tags:
+      - transformer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformerCategorizeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransformerCategorizeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransformerCategorizeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformerCategorizeResponse'
+          description: ''
   /transformer/categorize/v1_1_0/:
     post:
       operationId: transformer_categorize_v1_1_0_create
@@ -165,12 +211,103 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerCategorizeV1_1_0Request'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransformerCategorizeV1_1_0Response'
+          description: ''
+  /transformer/entities/analyze/:
+    post:
+      operationId: transformer_entities_analyze_create
+      description: Version-flexible entities analyze endpoint
+      tags:
+      - transformer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesAnalyzeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesAnalyzeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesAnalyzeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformerEntitiesAnalyzeResponse'
+          description: ''
+  /transformer/entities/extract/:
+    post:
+      operationId: transformer_entities_extract_create
+      description: Version-flexible entities extract endpoint
+      tags:
+      - transformer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesExtractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesExtractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesExtractRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformerEntitiesExtractResponse'
+          description: ''
+  /transformer/entities/test/:
+    post:
+      operationId: transformer_entities_test_create
+      description: Version-flexible entities test endpoint
+      tags:
+      - transformer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesTestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesTestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransformerEntitiesTestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformerEntitiesTestResponse'
           description: ''
   /transformer/entities/v1_1_0/analyze/:
     post:
@@ -189,6 +326,10 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerEntitiesV1_1_0AnalyzeRequest'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -213,6 +354,10 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerEntitiesV1_1_0ExtractRequest'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -237,6 +382,10 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerEntitiesV1_1_0TestRequest'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -261,12 +410,45 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerHeuristicCreateRequest'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransformerHeuristicCreateResponse'
+          description: ''
+  /transformer/logic/create/:
+    post:
+      operationId: transformer_logic_create_create
+      description: Version-flexible logic create endpoint
+      tags:
+      - transformer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformerLogicCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransformerLogicCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransformerLogicCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformerLogicCreateResponse'
           description: ''
   /transformer/logic/v1_1_0/create/:
     post:
@@ -285,6 +467,10 @@ paths:
             schema:
               $ref: '#/components/schemas/TransformerLogicV1_1_0CreateRequest'
         required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -339,101 +525,106 @@ components:
       - File Hosting Activity (6006)
       - Scan Activity (6007)
       type: string
-      description: '* `File System Activity (1001)` - FILE_SYSTEM_ACTIVITY_1001
-
+      description: |-
+        * `File System Activity (1001)` - FILE_SYSTEM_ACTIVITY_1001
         * `Kernel Extension Activity (1002)` - KERNEL_EXTENSION_ACTIVITY_1002
-
         * `Kernel Activity (1003)` - KERNEL_ACTIVITY_1003
-
         * `Memory Activity (1004)` - MEMORY_ACTIVITY_1004
-
         * `Module Activity (1005)` - MODULE_ACTIVITY_1005
-
         * `Scheduled Job Activity (1006)` - SCHEDULED_JOB_ACTIVITY_1006
-
         * `Process Activity (1007)` - PROCESS_ACTIVITY_1007
-
         * `Vulnerability Finding (2002)` - VULNERABILITY_FINDING_2002
-
         * `Compliance Finding (2003)` - COMPLIANCE_FINDING_2003
-
         * `Detection Finding (2004)` - DETECTION_FINDING_2004
-
         * `Incident Finding (2005)` - INCIDENT_FINDING_2005
-
         * `Account Change (3001)` - ACCOUNT_CHANGE_3001
-
         * `Authentication (3002)` - AUTHENTICATION_3002
-
         * `Authorize Session (3003)` - AUTHORIZE_SESSION_3003
-
         * `Entity Management (3004)` - ENTITY_MANAGEMENT_3004
-
         * `User Access Management (3005)` - USER_ACCESS_MANAGEMENT_3005
-
         * `Group Management (3006)` - GROUP_MANAGEMENT_3006
-
         * `Network Activity (4001)` - NETWORK_ACTIVITY_4001
-
         * `HTTP Activity (4002)` - HTTP_ACTIVITY_4002
-
         * `DNS Activity (4003)` - DNS_ACTIVITY_4003
-
         * `DHCP Activity (4004)` - DHCP_ACTIVITY_4004
-
         * `RDP Activity (4005)` - RDP_ACTIVITY_4005
-
         * `SMB Activity (4006)` - SMB_ACTIVITY_4006
-
         * `SSH Activity (4007)` - SSH_ACTIVITY_4007
-
         * `FTP Activity (4008)` - FTP_ACTIVITY_4008
-
         * `Email Activity (4009)` - EMAIL_ACTIVITY_4009
-
         * `Network File Activity (4010)` - NETWORK_FILE_ACTIVITY_4010
-
         * `Email File Activity (4011)` - EMAIL_FILE_ACTIVITY_4011
-
         * `Email URL Activity (4012)` - EMAIL_URL_ACTIVITY_4012
-
         * `NTP Activity (4013)` - NTP_ACTIVITY_4013
-
         * `Device Inventory Info (5001)` - DEVICE_INVENTORY_INFO_5001
-
         * `Device Config State (5002)` - DEVICE_CONFIG_STATE_5002
-
         * `User Inventory Info (5003)` - USER_INVENTORY_INFO_5003
-
         * `Operating System Patch State (5004)` - OPERATING_SYSTEM_PATCH_STATE_5004
-
         * `Device Config State Change (5019)` - DEVICE_CONFIG_STATE_CHANGE_5019
-
         * `Web Resources Activity (6001)` - WEB_RESOURCES_ACTIVITY_6001
-
         * `Application Lifecycle (6002)` - APPLICATION_LIFECYCLE_6002
-
         * `API Activity (6003)` - API_ACTIVITY_6003
-
         * `Web Resource Access Activity (6004)` - WEB_RESOURCE_ACCESS_ACTIVITY_6004
-
         * `Datastore Activity (6005)` - DATASTORE_ACTIVITY_6005
-
         * `File Hosting Activity (6006)` - FILE_HOSTING_ACTIVITY_6006
-
-        * `Scan Activity (6007)` - SCAN_ACTIVITY_6007'
+        * `Scan Activity (6007)` - SCAN_ACTIVITY_6007
     OcsfVersionEnum:
       enum:
+      - 1.0.0
       - 1.1.0
+      - 1.2.0
+      - 1.3.0
+      - 1.4.0
+      - 1.5.0
+      - 1.6.0
+      - 1.7.0
       type: string
-      description: '* `1.1.0` - V1_1_0'
+      description: |-
+        * `1.0.0` - V1_0_0
+        * `1.1.0` - V1_1_0
+        * `1.2.0` - V1_2_0
+        * `1.3.0` - V1_3_0
+        * `1.4.0` - V1_4_0
+        * `1.5.0` - V1_5_0
+        * `1.6.0` - V1_6_0
+        * `1.7.0` - V1_7_0
     TransformLanguageEnum:
       enum:
       - Python
       type: string
       description: '* `Python` - PYTHON'
+    TransformerCategorizeRequest:
+      type: object
+      description: Version-flexible categorization request serializer
+      properties:
+        input_entry:
+          type: string
+        user_guidance:
+          type: string
+        ocsf_version:
+          allOf:
+          - $ref: '#/components/schemas/OcsfVersionEnum'
+          default: 1.1.0
+      required:
+      - input_entry
+    TransformerCategorizeResponse:
+      type: object
+      description: Version-flexible categorization response serializer
+      properties:
+        ocsf_category:
+          type: string
+        ocsf_version:
+          $ref: '#/components/schemas/OcsfVersionEnum'
+        rationale:
+          type: string
+      required:
+      - ocsf_category
+      - ocsf_version
+      - rationale
     TransformerCategorizeV1_1_0Request:
       type: object
+      description: Legacy v1.1.0 request serializer - use TransformerCategorizeRequestSerializer
+        for version flexibility
       properties:
         input_entry:
           type: string
@@ -443,6 +634,7 @@ components:
       - input_entry
     TransformerCategorizeV1_1_0Response:
       type: object
+      description: Legacy v1.1.0 response serializer
       properties:
         ocsf_category:
           $ref: '#/components/schemas/OcsfCategoryEnum'
@@ -454,8 +646,419 @@ components:
       - ocsf_category
       - ocsf_version
       - rationale
+    TransformerEntitiesAnalyzeRequest:
+      type: object
+      description: Version-flexible entities analyzer request
+      properties:
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        ocsf_version:
+          allOf:
+          - $ref: '#/components/schemas/OcsfVersionEnum'
+          default: 1.1.0
+      required:
+      - input_entry
+      - ocsf_category
+    TransformerEntitiesAnalyzeResponse:
+      type: object
+      description: Version-flexible entities analyzer response
+      properties:
+        ocsf_version:
+          $ref: '#/components/schemas/OcsfVersionEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        data_type:
+          type: string
+        type_rationale:
+          type: string
+        mappings:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the entity mapping
+              entities:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                    description:
+                      type: string
+                  required:
+                  - value
+                  - description
+                description: List of entities associated with this mapping
+              ocsf_path:
+                type: string
+                description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+              path_rationale:
+                type: string
+                description: A precise explanation of why the entity was mapped to
+                  the OCSF path
+            required:
+            - id
+            - ocsf_path
+      required:
+      - data_type
+      - input_entry
+      - mappings
+      - ocsf_category
+      - ocsf_version
+      - type_rationale
+    TransformerEntitiesExtractRequest:
+      type: object
+      description: Version-flexible entities extract request
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        mappings:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the entity mapping
+              entities:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                    description:
+                      type: string
+                  required:
+                  - value
+                  - description
+                description: List of entities associated with this mapping
+              ocsf_path:
+                type: string
+                description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+              path_rationale:
+                type: string
+                description: A precise explanation of why the entity was mapped to
+                  the OCSF path
+            required:
+            - id
+            - ocsf_path
+        ocsf_version:
+          allOf:
+          - $ref: '#/components/schemas/OcsfVersionEnum'
+          default: 1.1.0
+      required:
+      - input_entry
+      - mappings
+      - ocsf_category
+      - transform_language
+    TransformerEntitiesExtractResponse:
+      type: object
+      description: Version-flexible entities extract response
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_version:
+          $ref: '#/components/schemas/OcsfVersionEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the extraction pattern
+              mapping:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier for the entity mapping
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        description:
+                          type: string
+                      required:
+                      - value
+                      - description
+                    description: List of entities associated with this mapping
+                  ocsf_path:
+                    type: string
+                    description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+                  path_rationale:
+                    type: string
+                    description: A precise explanation of why the entity was mapped
+                      to the OCSF path
+                required:
+                - id
+                - entity
+                - ocsf_path
+              dependency_setup:
+                type: string
+                description: The logic to set up any dependencies for the extraction/transformation
+                  logic, such as package import statements
+              extract_logic:
+                type: string
+                description: The extraction logic for the entity mapping, such a some
+                  Python or Javascript code
+              transform_logic:
+                type: string
+                description: The transformation logic for the entity mapping, such
+                  a some Python or Javascript code
+              validation_report:
+                type: object
+                description: Validation information for the extraction pattern
+                properties:
+                  input:
+                    type: string
+                    description: Input data that was validated
+                  output:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Output data that was generated
+                  report_entries:
+                    type: array
+                    items:
+                      type: string
+                    description: List of validation messages or details
+                  passed:
+                    type: boolean
+                    description: Whether validation passed (true) or failed (false)
+                required:
+                - input
+                - output
+                - report_entries
+                - passed
+            required:
+            - id
+            - extract_logic
+            - transform_logic
+      required:
+      - input_entry
+      - ocsf_category
+      - ocsf_version
+      - patterns
+      - transform_language
+    TransformerEntitiesTestRequest:
+      type: object
+      description: Version-flexible entities test request
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the extraction pattern
+              mapping:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier for the entity mapping
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        description:
+                          type: string
+                      required:
+                      - value
+                      - description
+                    description: List of entities associated with this mapping
+                  ocsf_path:
+                    type: string
+                    description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+                  path_rationale:
+                    type: string
+                    description: A precise explanation of why the entity was mapped
+                      to the OCSF path
+                required:
+                - id
+                - entity
+                - ocsf_path
+              dependency_setup:
+                type: string
+                description: The logic to set up any dependencies for the extraction/transformation
+                  logic, such as package import statements
+              extract_logic:
+                type: string
+                description: The extraction logic for the entity mapping, such a some
+                  Python or Javascript code
+              transform_logic:
+                type: string
+                description: The transformation logic for the entity mapping, such
+                  a some Python or Javascript code
+              validation_report:
+                type: object
+                description: Validation information for the extraction pattern
+                properties:
+                  input:
+                    type: string
+                    description: Input data that was validated
+                  output:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Output data that was generated
+                  report_entries:
+                    type: array
+                    items:
+                      type: string
+                    description: List of validation messages or details
+                  passed:
+                    type: boolean
+                    description: Whether validation passed (true) or failed (false)
+                required:
+                - input
+                - output
+                - report_entries
+                - passed
+            required:
+            - id
+            - extract_logic
+            - transform_logic
+        ocsf_version:
+          allOf:
+          - $ref: '#/components/schemas/OcsfVersionEnum'
+          default: 1.1.0
+      required:
+      - input_entry
+      - ocsf_category
+      - patterns
+      - transform_language
+    TransformerEntitiesTestResponse:
+      type: object
+      description: Version-flexible entities test response
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_version:
+          $ref: '#/components/schemas/OcsfVersionEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the extraction pattern
+              mapping:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier for the entity mapping
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        description:
+                          type: string
+                      required:
+                      - value
+                      - description
+                    description: List of entities associated with this mapping
+                  ocsf_path:
+                    type: string
+                    description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+                  path_rationale:
+                    type: string
+                    description: A precise explanation of why the entity was mapped
+                      to the OCSF path
+                required:
+                - id
+                - entity
+                - ocsf_path
+              dependency_setup:
+                type: string
+                description: The logic to set up any dependencies for the extraction/transformation
+                  logic, such as package import statements
+              extract_logic:
+                type: string
+                description: The extraction logic for the entity mapping, such a some
+                  Python or Javascript code
+              transform_logic:
+                type: string
+                description: The transformation logic for the entity mapping, such
+                  a some Python or Javascript code
+              validation_report:
+                type: object
+                description: Validation information for the extraction pattern
+                properties:
+                  input:
+                    type: string
+                    description: Input data that was validated
+                  output:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Output data that was generated
+                  report_entries:
+                    type: array
+                    items:
+                      type: string
+                    description: List of validation messages or details
+                  passed:
+                    type: boolean
+                    description: Whether validation passed (true) or failed (false)
+                required:
+                - input
+                - output
+                - report_entries
+                - passed
+            required:
+            - id
+            - extract_logic
+            - transform_logic
+      required:
+      - input_entry
+      - ocsf_category
+      - ocsf_version
+      - patterns
+      - transform_language
     TransformerEntitiesV1_1_0AnalyzeRequest:
       type: object
+      description: Legacy v1.1.0 analyzer request - use TransformerEntitiesAnalyzeRequestSerializer
+        for version flexibility
       properties:
         ocsf_category:
           $ref: '#/components/schemas/OcsfCategoryEnum'
@@ -466,6 +1069,7 @@ components:
       - ocsf_category
     TransformerEntitiesV1_1_0AnalyzeResponse:
       type: object
+      description: Legacy v1.1.0 analyzer response
       properties:
         ocsf_version:
           $ref: '#/components/schemas/OcsfVersionEnum'
@@ -517,6 +1121,7 @@ components:
       - type_rationale
     TransformerEntitiesV1_1_0ExtractRequest:
       type: object
+      description: Legacy v1.1.0 extract request
       properties:
         transform_language:
           $ref: '#/components/schemas/TransformLanguageEnum'
@@ -562,6 +1167,7 @@ components:
       - transform_language
     TransformerEntitiesV1_1_0ExtractResponse:
       type: object
+      description: Legacy v1.1.0 extract response
       properties:
         transform_language:
           $ref: '#/components/schemas/TransformLanguageEnum'
@@ -658,6 +1264,7 @@ components:
       - transform_language
     TransformerEntitiesV1_1_0TestRequest:
       type: object
+      description: Legacy v1.1.0 test request
       properties:
         transform_language:
           $ref: '#/components/schemas/TransformLanguageEnum'
@@ -866,6 +1473,161 @@ components:
       required:
       - new_heuristic
       - rationale
+    TransformerLogicCreateRequest:
+      type: object
+      description: Version-flexible logic create request
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_category:
+          type: string
+        input_entry:
+          type: string
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the extraction pattern
+              mapping:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier for the entity mapping
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        description:
+                          type: string
+                      required:
+                      - value
+                      - description
+                    description: List of entities associated with this mapping
+                  ocsf_path:
+                    type: string
+                    description: Period-delimited path in OCSF schema (e.g., 'http_request.url.port')
+                  path_rationale:
+                    type: string
+                    description: A precise explanation of why the entity was mapped
+                      to the OCSF path
+                required:
+                - id
+                - entity
+                - ocsf_path
+              dependency_setup:
+                type: string
+                description: The logic to set up any dependencies for the extraction/transformation
+                  logic, such as package import statements
+              extract_logic:
+                type: string
+                description: The extraction logic for the entity mapping, such a some
+                  Python or Javascript code
+              transform_logic:
+                type: string
+                description: The transformation logic for the entity mapping, such
+                  a some Python or Javascript code
+              validation_report:
+                type: object
+                description: Validation information for the extraction pattern
+                properties:
+                  input:
+                    type: string
+                    description: Input data that was validated
+                  output:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Output data that was generated
+                  report_entries:
+                    type: array
+                    items:
+                      type: string
+                    description: List of validation messages or details
+                  passed:
+                    type: boolean
+                    description: Whether validation passed (true) or failed (false)
+                required:
+                - input
+                - output
+                - report_entries
+                - passed
+            required:
+            - id
+            - extract_logic
+            - transform_logic
+        ocsf_version:
+          allOf:
+          - $ref: '#/components/schemas/OcsfVersionEnum'
+          default: 1.1.0
+      required:
+      - input_entry
+      - ocsf_category
+      - patterns
+      - transform_language
+    TransformerLogicCreateResponse:
+      type: object
+      description: Version-flexible logic create response
+      properties:
+        transform_language:
+          $ref: '#/components/schemas/TransformLanguageEnum'
+        ocsf_version:
+          $ref: '#/components/schemas/OcsfVersionEnum'
+        ocsf_category:
+          type: string
+        transformer:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Unique identifier for the transformer
+            dependency_setup:
+              type: string
+              description: The logic to set up any dependencies for the extraction/transformation
+                logic, such as package import statements
+            transformer_logic:
+              type: string
+              description: The transformation logic, such a some Python or Javascript
+                code
+            validation_report:
+              type: object
+              description: Validation information for the extraction pattern
+              properties:
+                input:
+                  type: string
+                  description: Input data that was validated
+                output:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Output data that was generated
+                report_entries:
+                  type: array
+                  items:
+                    type: string
+                  description: List of validation messages or details
+                passed:
+                  type: boolean
+                  description: Whether validation passed (true) or failed (false)
+              required:
+              - input
+              - output
+              - report_entries
+              - passed
+          required:
+          - id
+          - transformer_logic
+      required:
+      - ocsf_category
+      - ocsf_version
+      - transform_language
+      - transformer
     TransformerLogicV1_1_0CreateRequest:
       type: object
       properties:
@@ -1015,3 +1777,11 @@ components:
       - ocsf_version
       - transform_language
       - transformer
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

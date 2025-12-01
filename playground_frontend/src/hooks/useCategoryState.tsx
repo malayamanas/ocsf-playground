@@ -71,13 +71,14 @@ const useCategoryState = ({
     try {
       const response = await getCategoryRecommendation(
         selectedLog,
-        state.guidance
+        state.guidance,
+        state.version?.value as any  // Pass the selected OCSF version
       );
 
       const recommendedCategory = ocsfCategoryOptions.find(
         option => option.value === response.ocsf_category
       ) || ocsfCategoryOptions[0];
-      
+
       setState(prev => ({
         ...prev,
         category: recommendedCategory,

@@ -1,0 +1,242 @@
+# ========================================
+# Splunk transforms.conf for OCSF HTTP Activity Events
+# SINGLE-NODE SPLUNK CONFIGURATION
+# ========================================
+#
+# Deploy this file to: $SPLUNK_HOME/etc/apps/<your_app>/local/transforms.conf
+# or: $SPLUNK_HOME/etc/system/local/transforms.conf
+#
+# transforms.conf works with props.conf to provide advanced data processing:
+# - Route events to different indexes based on content
+# - Filter/drop unwanted events
+# - Extract or transform field values
+# - Mask sensitive data
+#
+# After creating this file, uncomment corresponding TRANSFORMS- lines in props.conf
+#
+# Restart Splunk after making changes:
+# $SPLUNK_HOME/bin/splunk restart
+# ========================================
+
+# ========================================
+# INDEX ROUTING
+# ========================================
+# Route events to different indexes based on HTTP status codes
+
+[route_to_security_index]
+# Route server errors (5xx) to security index for alerting
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"5\d{2}"
+DEST_KEY = _MetaData:Index
+FORMAT = security
+
+[route_to_monitoring_index]
+# Route client errors (4xx) to monitoring index
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"4\d{2}"
+DEST_KEY = _MetaData:Index
+FORMAT = monitoring
+
+[route_to_main_index]
+# Route successful requests (2xx/3xx) to main index
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"[23]\d{2}"
+DEST_KEY = _MetaData:Index
+FORMAT = main
+
+# ========================================
+# EVENT FILTERING
+# ========================================
+# Drop events that match certain patterns
+
+[filter_healthcheck_requests]
+# Filter out health check requests (common patterns)
+REGEX = "url"\s*:\s*\{\s*"path"\s*:\s*"(/health|/status|/ping|/healthz)"
+DEST_KEY = queue
+FORMAT = nullQueue
+
+[filter_static_assets]
+# Filter out static asset requests (.css, .js, .png, etc.)
+REGEX = "url"\s*:\s*\{\s*"path"\s*:\s*".*\.(css|js|png|jpg|jpeg|gif|ico|woff|woff2|ttf|svg)"
+DEST_KEY = queue
+FORMAT = nullQueue
+
+[filter_successful_gets]
+# Drop successful GET requests (too noisy)
+# WARNING: Only use this if you don't need to track all successful reads
+REGEX = "http_method"\s*:\s*"GET".*"http_response"\s*:\s*\{\s*"code"\s*:\s*"200"
+DEST_KEY = queue
+FORMAT = nullQueue
+
+[filter_known_bots]
+# Filter out known bot/crawler traffic
+REGEX = "user_agent"\s*:\s*"(bot|crawler|spider|scraper)"
+DEST_KEY = queue
+FORMAT = nullQueue
+
+# ========================================
+# DATA MASKING / ANONYMIZATION
+# ========================================
+# Mask or anonymize sensitive data before indexing
+
+[mask_query_strings]
+# Mask query strings that may contain sensitive data
+# This is a more complex transform that requires scripted transforms
+# For basic masking, use SEDCMD in props.conf instead
+REGEX = ("query_string"\s*:\s*)"([^"]+)"
+FORMAT = $1"REDACTED"
+DEST_KEY = _raw
+
+[anonymize_source_ips]
+# Mask last octet of IP addresses for privacy
+REGEX = ("ip"\s*:\s*")(\d+\.\d+\.\d+\.)\d+(")"
+FORMAT = $1$2xxx$3
+DEST_KEY = _raw
+
+# ========================================
+# FIELD EXTRACTION
+# ========================================
+# Extract additional fields using regex
+
+[extract_http_status_category]
+# Extract HTTP status category (2xx, 3xx, 4xx, 5xx)
+# Note: This is better done with EVAL in props.conf (already configured)
+# Keeping this as an example of regex-based field extraction
+REGEX = "code"\s*:\s*"([2-5])\d{2}"
+FORMAT = status_category::$1xx
+WRITE_META = true
+
+[extract_url_extension]
+# Extract file extension from URL path
+REGEX = "path"\s*:\s*"[^"]*\.([a-zA-Z0-9]+)"
+FORMAT = url_extension::$1
+WRITE_META = true
+
+[extract_domain_from_referrer]
+# Extract domain from referrer URL
+REGEX = "referrer"\s*:\s*"https?://([^/]+)"
+FORMAT = referrer_domain::$1
+WRITE_META = true
+
+# ========================================
+# SOURCE TYPE OVERRIDES
+# ========================================
+# Change sourcetype based on content
+
+[override_sourcetype_for_errors]
+# Change sourcetype for error responses to enable different parsing
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"[45]\d{2}"
+DEST_KEY = MetaData:Sourcetype
+FORMAT = sourcetype::ocsf:http_activity:error
+
+[override_sourcetype_for_api]
+# Change sourcetype for API endpoints
+REGEX = "path"\s*:\s*"/api/
+DEST_KEY = MetaData:Sourcetype
+FORMAT = sourcetype::ocsf:http_activity:api
+
+# ========================================
+# HOST ASSIGNMENT
+# ========================================
+# Override host field based on content
+
+[set_host_from_log_path]
+# Extract hostname from log file path
+# Use with props.conf: TRANSFORMS-host = set_host_from_log_path
+SOURCE_KEY = source
+REGEX = /var/log/([^/]+)/
+FORMAT = host::$1
+DEST_KEY = MetaData:Host
+
+# ========================================
+# LOOKUP TABLE POPULATION
+# ========================================
+# Automatically populate lookup tables
+
+[populate_threat_intel_lookup]
+# Track suspicious IPs in a lookup table
+# Requires a lookup definition and CSV file
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"(401|403|404)".*"src_endpoint"\s*:\s*\{\s*"ip"\s*:\s*"([^"]+)"
+FORMAT = suspicious_ip::$2 status::$1
+# Note: Full implementation requires OUTPUT configuration
+
+# ========================================
+# ADVANCED: MULTIPLE INDEX ROUTING
+# ========================================
+# Clone events to multiple indexes
+
+[clone_errors_to_security]
+# Send errors to both ocsf and security indexes
+# Use with props.conf: TRANSFORMS-clone = clone_errors_to_security
+REGEX = "http_response"\s*:\s*\{\s*"code"\s*:\s*"[45]\d{2}"
+DEST_KEY = _MetaData:Index
+FORMAT = security
+# To clone (send to both indexes), you need multiple TRANSFORMS- lines in props.conf
+
+# ========================================
+# USAGE NOTES
+# ========================================
+#
+# To activate these transforms, add to props.conf:
+#
+# [ocsf:http_activity]
+# # Route server errors to security index
+# TRANSFORMS-route_errors = route_to_security_index
+#
+# # Filter out health checks
+# TRANSFORMS-filter = filter_healthcheck_requests
+#
+# # Apply multiple transforms (order matters!)
+# TRANSFORMS-cleanup = filter_healthcheck_requests, filter_static_assets
+#
+# # Extract additional fields
+# TRANSFORMS-extract = extract_url_extension, extract_domain_from_referrer
+#
+# ========================================
+# TESTING TRANSFORMS
+# ========================================
+#
+# Test your regex patterns before deploying:
+#
+# 1. Use Splunk's regex testing tool in Search:
+#    | makeresults | eval _raw="{\"http_response\":{\"code\":\"500\"}}" | rex field=_raw "code\":\"(?<status>\d+)"
+#
+# 2. Check btool output to verify configuration:
+#    $SPLUNK_HOME/bin/splunk btool transforms list --debug
+#
+# 3. Test routing without dropping events:
+#    - Comment out DEST_KEY/FORMAT lines
+#    - Add: WRITE_META = true
+#    - Search for: index=* sourcetype=ocsf:http_activity | table _raw, index
+#
+# ========================================
+# PERFORMANCE CONSIDERATIONS
+# ========================================
+#
+# - Regex evaluation happens at index time (can impact performance)
+# - Use specific, efficient regex patterns
+# - Test with realistic data volumes
+# - Consider using nullQueue carefully (you can't recover dropped events)
+# - For high-volume data, prefer routing over filtering when possible
+#
+# ========================================
+# COMMON PATTERNS
+# ========================================
+#
+# Route by field value:
+#   REGEX = "fieldname"\s*:\s*"value"
+#   DEST_KEY = _MetaData:Index
+#   FORMAT = index_name
+#
+# Drop events:
+#   REGEX = pattern_to_drop
+#   DEST_KEY = queue
+#   FORMAT = nullQueue
+#
+# Extract field:
+#   REGEX = "fieldname"\s*:\s*"([^"]+)"
+#   FORMAT = new_field::$1
+#   WRITE_META = true
+#
+# Mask data:
+#   REGEX = (prefix)"sensitive_value"(suffix)
+#   FORMAT = $1"MASKED"$2
+#   DEST_KEY = _raw
+#

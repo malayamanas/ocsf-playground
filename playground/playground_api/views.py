@@ -28,18 +28,33 @@ from backend.regex_expert.parameters import RegexFlavor
 
 from backend.transformers.parameters import TransformLanguage
 from backend.transformers.transformers import Transformer, create_transformer_python
-from backend.transformers.validators import PythonOcsfV1_1_0TransformValidator
+from backend.transformers.validators import PythonOcsfV1_1_0TransformValidator, PythonOcsfTransformValidator
 
 from .serializers import (TransformerHeuristicCreateRequestSerializer, TransformerHeuristicCreateResponseSerializer,
                           TransformerCategorizeV1_1_0RequestSerializer, TransformerCategorizeV1_1_0ResponseSerializer,
+                          TransformerCategorizeRequestSerializer, TransformerCategorizeResponseSerializer,
                           TransformerEntitiesV1_1_0AnalyzeRequestSerializer, TransformerEntitiesV1_1_0AnalyzeResponseSerializer,
+                          TransformerEntitiesAnalyzeRequestSerializer, TransformerEntitiesAnalyzeResponseSerializer,
                           TransformerEntitiesV1_1_0ExtractRequestSerializer, TransformerEntitiesV1_1_0ExtractResponseSerializer,
+                          TransformerEntitiesExtractRequestSerializer, TransformerEntitiesExtractResponseSerializer,
                           TransformerEntitiesV1_1_0TestRequestSerializer, TransformerEntitiesV1_1_0TestResponseSerializer,
-                          TransformerLogicV1_1_0CreateRequestSerializer, TransformerLogicV1_1_0CreateResponseSerializer
+                          TransformerEntitiesTestRequestSerializer, TransformerEntitiesTestResponseSerializer,
+                          TransformerLogicV1_1_0CreateRequestSerializer, TransformerLogicV1_1_0CreateResponseSerializer,
+                          TransformerLogicCreateRequestSerializer, TransformerLogicCreateResponseSerializer
                           )
 
 
 logger = logging.getLogger("playground_api")
+
+
+def parse_ocsf_category(category_string: str) -> str:
+    """
+    Parse OCSF category string to extract event name.
+    Format: "Event Name (ID)" -> "Event Name"
+    """
+    if '(' not in category_string:
+        return category_string
+    return category_string.split('(')[0].strip()
 
 
 class TransformerHeuristicCreateView(APIView):
@@ -166,7 +181,74 @@ class TransformerCategorizeV1_1_0View(APIView):
             result = invoke_categorization_expert(expert, task)
 
             return result
-    
+
+
+class TransformerCategorizeView(APIView):
+    """Version-flexible categorization endpoint"""
+    @csrf_exempt
+    @extend_schema(
+        request=TransformerCategorizeRequestSerializer,
+        responses=TransformerCategorizeResponseSerializer
+    )
+    def post(self, request):
+        logger.info(f"Received categorization request: {request.data}")
+
+        # Validate incoming data
+        serializer = TransformerCategorizeRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Invalid categorization request: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        task_id = str(uuid.uuid4())
+
+        # Get version from request (defaults to v1.1.0)
+        ocsf_version = serializer.validated_data.get('ocsf_version', OcsfVersion.V1_1_0)
+
+        # Perform the task
+        try:
+            result = self._categorize(task_id, serializer, ocsf_version)
+            logger.info(f"Categorization successful for OCSF version {ocsf_version.value}")
+            logger.debug(f"Category value:\n{result.category.value}")
+        except Exception as e:
+            logger.error(f"Categorization failed: {str(e)}")
+            logger.exception(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Serialize and return the response
+        response = TransformerCategorizeResponseSerializer(data={
+            "ocsf_category": result.category.value,
+            "ocsf_version": ocsf_version.value,
+            "rationale": result.category.rationale
+        })
+        if not response.is_valid():
+            logger.error(f"Invalid categorization response: {response.errors}")
+            return Response(response.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def _categorize(self, task_id: str, serializer: TransformerCategorizeRequestSerializer, ocsf_version: OcsfVersion) -> CategorizationTask:
+        expert = get_categorization_expert(ocsf_version)
+
+        system_message = expert.system_prompt_factory(
+            input_entry=serializer.validated_data["input_entry"],
+            user_guidance=serializer.validated_data["user_guidance"]
+        )
+        turns = [
+            system_message,
+            HumanMessage(content="Please categorize the input.")
+        ]
+
+        task = CategorizationTask(
+            task_id=task_id,
+            input=serializer.validated_data["input_entry"],
+            context=turns,
+            category=None
+        )
+
+        result = invoke_categorization_expert(expert, task)
+
+        return result
+
 
 class UnsupportedTransformLanguageError(Exception):
     pass
@@ -257,7 +339,101 @@ class TransformerLogicV1_1_0CreateView(APIView):
         transformer.validation_report = report
 
         return report
-    
+
+
+class TransformerLogicCreateView(APIView):
+    """Version-flexible logic create endpoint"""
+    @csrf_exempt
+    @extend_schema(
+        request=TransformerLogicCreateRequestSerializer,
+        responses=TransformerLogicCreateResponseSerializer
+    )
+    def post(self, request):
+        logger.info(f"Received transform creation request: {request.data}")
+
+        # Validate incoming data
+        serializer = TransformerLogicCreateRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Invalid transform creation request: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        task_id = str(uuid.uuid4())
+
+        # Get version from request (defaults to v1.1.0)
+        ocsf_version = serializer.validated_data.get('ocsf_version', OcsfVersion.V1_1_0)
+
+        # Perform the task
+        try:
+            # Create the transform
+            transformer = self._create(task_id, serializer)
+            logger.info(f"Transform creation completed for OCSF version {ocsf_version.value}")
+            logger.debug(f"Transform value:\n{transformer.to_json()}")
+
+            # Validate the transform
+            report = self._validate(
+                serializer.validated_data["transform_language"],
+                parse_ocsf_category(serializer.validated_data["ocsf_category"]),
+                transformer,
+                serializer.validated_data["input_entry"],
+                ocsf_version
+            )
+            logger.info(f"Transform validation completed")
+            logger.debug(f"Validation report:\n{json.dumps(report.to_json(), indent=4)}")
+        except UnsupportedTransformLanguageError as e:
+            logger.error(f"{str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Transform creation failed: {str(e)}")
+            logger.exception(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Serialize and return the response
+        response = TransformerLogicCreateResponseSerializer(data={
+            "transform_language": serializer.validated_data["transform_language"].value,
+            "ocsf_version": ocsf_version.value,
+            "ocsf_category": serializer.validated_data["ocsf_category"],
+            "transformer": transformer.to_json()
+        })
+
+        if not response.is_valid():
+            logger.error(f"Invalid transform creation response: {response.errors}")
+            return Response(response.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def _create(self, task_id: str, serializer: TransformerLogicCreateRequestSerializer) -> Transformer:
+        if serializer.validated_data["transform_language"] == TransformLanguage.PYTHON:
+            patterns = []
+            for raw_pattern in serializer.validated_data["patterns"]:
+                patterns.append(ExtractionPattern.from_json(raw_pattern))
+
+            transformer = create_transformer_python(
+                transformer_id=task_id,
+                patterns=patterns
+            )
+        else:
+            raise UnsupportedTransformLanguageError(f"Unsupported transform language: {serializer.validated_data['transform_language']}")
+
+        return transformer
+
+    def _validate(self, language: TransformLanguage, category_name: str, transformer: Transformer, input_entry: str, ocsf_version: OcsfVersion) -> ValidationReport:
+        # Validate the transform
+        if language == TransformLanguage.PYTHON:
+            validator = PythonOcsfTransformValidator(
+                event_name=category_name,
+                input_entry=input_entry,
+                transformer=transformer,
+                ocsf_version=ocsf_version
+            )
+            report = validator.validate()
+        else:
+            raise UnsupportedTransformLanguageError(f"Unsupported transform language: {language}")
+
+        transformer.validation_report = report
+
+        return report
+
+
 class TransformerEntitiesV1_1_0AnalyzeView(APIView):
     @csrf_exempt
     @extend_schema(
@@ -323,7 +499,80 @@ class TransformerEntitiesV1_1_0AnalyzeView(APIView):
             result = invoke_analysis_expert(expert, task)
 
             return result
-    
+
+
+class TransformerEntitiesAnalyzeView(APIView):
+    """Version-flexible entities analyze endpoint"""
+    @csrf_exempt
+    @extend_schema(
+        request=TransformerEntitiesAnalyzeRequestSerializer,
+        responses=TransformerEntitiesAnalyzeResponseSerializer
+    )
+    def post(self, request):
+        logger.info(f"Received analysis request: {request.data}")
+
+        # Validate incoming data
+        serializer = TransformerEntitiesAnalyzeRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Invalid analysis request: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        task_id = str(uuid.uuid4())
+
+        # Get version from request (defaults to v1.1.0)
+        ocsf_version = serializer.validated_data.get('ocsf_version', OcsfVersion.V1_1_0)
+
+        # Perform the task
+        try:
+            result = self._analyze(task_id, serializer, ocsf_version)
+            logger.info(f"Analysis successful for OCSF version {ocsf_version.value}")
+            logger.debug(f"Entities value:\n{json.dumps(result.entities_report.to_json(), indent=4)}")
+        except Exception as e:
+            logger.error(f"Analysis failed: {str(e)}")
+            logger.exception(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Serialize and return the response
+        response = TransformerEntitiesAnalyzeResponseSerializer(data={
+            "ocsf_category": serializer.validated_data["ocsf_category"],
+            "ocsf_version": ocsf_version.value,
+            "input_entry": serializer.validated_data["input_entry"],
+            "data_type": result.entities_report.data_type,
+            "type_rationale": result.entities_report.type_rationale,
+            "mappings": result.entities_report.to_json()["mappings"],
+        })
+        if not response.is_valid():
+            logger.error(f"Invalid analysis response: {response.errors}")
+            return Response(response.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def _analyze(self, task_id: str, serializer: TransformerEntitiesAnalyzeRequestSerializer, ocsf_version: OcsfVersion) -> AnalysisTask:
+        # Parse event name from category string
+        event_name = parse_ocsf_category(serializer.validated_data["ocsf_category"])
+
+        expert = get_analysis_expert(ocsf_version, event_name)
+
+        system_message = expert.system_prompt_factory(
+            input_entry=serializer.validated_data["input_entry"]
+        )
+        turns = [
+            system_message,
+            HumanMessage(content="Please analyze the input for entities and create mappings.")
+        ]
+
+        task = AnalysisTask(
+            task_id=task_id,
+            input=serializer.validated_data["input_entry"],
+            context=turns,
+            entities_report=None
+        )
+
+        result = invoke_analysis_expert(expert, task)
+
+        return result
+
+
 class TransformerEntitiesV1_1_0ExtractView(APIView):
 
     @csrf_exempt
@@ -438,6 +687,128 @@ class TransformerEntitiesV1_1_0ExtractView(APIView):
 
         return patterns
 
+
+class TransformerEntitiesExtractView(APIView):
+    """Version-flexible entities extract endpoint"""
+    @csrf_exempt
+    @extend_schema(
+        request=TransformerEntitiesExtractRequestSerializer,
+        responses=TransformerEntitiesExtractResponseSerializer
+    )
+    def post(self, request):
+        logger.info(f"Received extraction request: {request.data}")
+
+        # Validate incoming data
+        serializer = TransformerEntitiesExtractRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Invalid extraction request: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        task_id = str(uuid.uuid4())
+
+        # Get version from request (defaults to v1.1.0)
+        ocsf_version = serializer.validated_data.get('ocsf_version', OcsfVersion.V1_1_0)
+
+        # Perform the task
+        try:
+            # Create the extraction patterns
+            result = self._perform_extraction(task_id, serializer, ocsf_version)
+            logger.info(f"Extraction completed for OCSF version {ocsf_version.value}")
+            logger.debug(f"Extraction patterns:\n{json.dumps([pattern.to_json() for pattern in result.patterns], indent=4)}")
+
+            # Validate the patterns
+            patterns = self._validate(serializer.validated_data["input_entry"], result.patterns)
+            logger.info(f"Extraction pattern validation completed")
+        except UnsupportedTransformLanguageError as e:
+            logger.error(f"{str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Extraction process failed: {str(e)}")
+            logger.exception(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Serialize and return the response
+        response = TransformerEntitiesExtractResponseSerializer(data={
+            "transform_language": serializer.validated_data["transform_language"].value,
+            "ocsf_version": ocsf_version.value,
+            "ocsf_category": serializer.validated_data["ocsf_category"],
+            "input_entry": serializer.validated_data["input_entry"],
+            "patterns": [pattern.to_json() for pattern in patterns],
+        })
+
+        if not response.is_valid():
+            logger.error(f"Invalid extraction response: {response.errors}")
+            return Response(response.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def _perform_extraction(self, task_id: str, serializer: TransformerEntitiesExtractRequestSerializer, ocsf_version: OcsfVersion) -> ExtractTask:
+        # Parse event name from category string
+        event_name = parse_ocsf_category(serializer.validated_data["ocsf_category"])
+
+        # Perform the inference task to create the extraction patterns
+        expert = get_extraction_expert(
+            ocsf_version=ocsf_version,
+            ocsf_event_name=event_name
+        )
+
+        system_message = expert.system_prompt_factory(
+            input_entry=serializer.validated_data["input_entry"],
+            mapping_list=[EntityMapping.from_json(raw) for raw in serializer.validated_data["mappings"]]
+        )
+
+        turns = [
+            system_message,
+            HumanMessage(content="Please create the extraction patterns.")
+        ]
+
+        if serializer.validated_data["transform_language"] == TransformLanguage.PYTHON:
+            task = ExtractTask(
+                task_id=task_id,
+                input=serializer.validated_data["input_entry"],
+                context=turns,
+                patterns=None
+            )
+        else:
+            raise UnsupportedTransformLanguageError(f"Unsupported extraction language: {serializer.validated_data['transform_language']}")
+
+        result = invoke_extraction_expert(expert, task)
+
+        # Map the patterns to the mappings.  This is necessary because the patterns were created by the LLM, but
+        # the LLM did not include the original mapping data in its output to save tokens.  We re-join the two using
+        # the mapping ID.
+        try:
+            for pattern in result.patterns:
+                raw_mapping = next(
+                    (mapping for mapping in serializer.validated_data["mappings"] if mapping["id"] == pattern.id)
+                )
+                pattern.mapping = EntityMapping(
+                    id=raw_mapping["id"],
+                    entities=[
+                        Entity(
+                            value=entity["value"],
+                            description=entity["description"]
+                        )
+                        for entity in raw_mapping["entities"]
+                    ],
+                    ocsf_path=raw_mapping["ocsf_path"],
+                    path_rationale=raw_mapping["path_rationale"]
+                )
+        except StopIteration:
+            raise ValueError(f"Mapping ID {pattern.id} not found in the input mappings.")
+
+        return result
+
+    def _validate(self, input_entry: str, patterns: List[ExtractionPattern]) -> List[ExtractionPattern]:
+        for pattern in patterns:
+            pattern.validation_report = PythonExtractionPatternValidator(
+                input_entry=input_entry,
+                pattern=pattern
+            ).validate()
+
+        return patterns
+
+
 class TransformerEntitiesV1_1_0TestView(APIView):
     @csrf_exempt
     @extend_schema(
@@ -514,3 +885,136 @@ class TransformerEntitiesV1_1_0TestView(APIView):
             ).validate()
 
         return patterns
+
+
+class TransformerEntitiesTestView(APIView):
+    """Version-flexible entities test endpoint"""
+    @csrf_exempt
+    @extend_schema(
+        request=TransformerEntitiesTestRequestSerializer,
+        responses=TransformerEntitiesTestResponseSerializer
+    )
+    def post(self, request):
+        logger.info(f"Received entities test request: {request.data}")
+
+        # Validate incoming data
+        serializer = TransformerEntitiesTestRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Invalid entities test request: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        task_id = str(uuid.uuid4())
+
+        # Get version from request (defaults to v1.1.0)
+        ocsf_version = serializer.validated_data.get('ocsf_version', OcsfVersion.V1_1_0)
+
+        # Perform the task
+        try:
+            # Validate the patterns
+            raw_patterns = serializer.validated_data["patterns"]
+            patterns = []
+            for raw_pattern in raw_patterns:
+                pattern = ExtractionPattern(
+                    id=raw_pattern["id"],
+                    dependency_setup=raw_pattern["dependency_setup"],
+                    extract_logic=raw_pattern["extract_logic"],
+                    transform_logic=raw_pattern["transform_logic"],
+                    mapping=EntityMapping(
+                        id=raw_pattern["mapping"]["id"],
+                        entities=[
+                            Entity(
+                                value=entity["value"],
+                                description=entity["description"]
+                            )
+                            for entity in raw_pattern["mapping"]["entities"]
+                        ],
+                        ocsf_path=raw_pattern["mapping"]["ocsf_path"],
+                        path_rationale=raw_pattern["mapping"]["path_rationale"]
+                    ) if raw_pattern["mapping"] else None,
+                )
+                patterns.append(pattern)
+
+            validated_patterns = self._validate(serializer.validated_data["input_entry"], patterns)
+            logger.info(f"Extraction pattern validation completed for OCSF version {ocsf_version.value}")
+        except UnsupportedTransformLanguageError as e:
+            logger.error(f"{str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Entities testing process failed: {str(e)}")
+            logger.exception(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Serialize and return the response
+        response = TransformerEntitiesTestResponseSerializer(data={
+            "transform_language": serializer.validated_data["transform_language"].value,
+            "ocsf_version": ocsf_version.value,
+            "ocsf_category": serializer.validated_data["ocsf_category"],
+            "input_entry": serializer.validated_data["input_entry"],
+            "patterns": [validated_pattern.to_json() for validated_pattern in validated_patterns],
+        })
+
+        if not response.is_valid():
+            logger.error(f"Invalid entities test response: {response.errors}")
+            return Response(response.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def _validate(self, input_entry: str, patterns: List[ExtractionPattern]) -> List[ExtractionPattern]:
+        for pattern in patterns:
+            pattern.validation_report = PythonExtractionPatternValidator(
+                input_entry=input_entry,
+                pattern=pattern
+            ).validate()
+
+        return patterns
+
+
+class AuthDiagnosticView(APIView):
+    """
+    Diagnostic endpoint to check authentication configuration.
+    Access at: http://127.0.0.1:8000/auth/diagnostic/
+    """
+
+    def get(self, request):
+        import os
+        from backend.core.claude_auth import ClaudeAuthentication
+
+        diagnostic_info = {
+            "status": "checking",
+            "environment": {},
+            "credentials": {},
+            "errors": []
+        }
+
+        # Check environment variables
+        anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+        claude_oauth = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+
+        diagnostic_info["environment"]["ANTHROPIC_API_KEY"] = (
+            f"{anthropic_api_key[:20]}..." if anthropic_api_key else "NOT_SET"
+        )
+        diagnostic_info["environment"]["CLAUDE_CODE_OAUTH_TOKEN"] = (
+            f"{claude_oauth[:20]}..." if claude_oauth else "NOT_SET"
+        )
+
+        # Check what credentials will be used
+        try:
+            api_key, auth_token = ClaudeAuthentication.get_credentials()
+
+            if api_key:
+                diagnostic_info["credentials"]["type"] = "API_KEY"
+                diagnostic_info["credentials"]["value"] = f"{api_key[:20]}..."
+            elif auth_token:
+                diagnostic_info["credentials"]["type"] = "AUTH_TOKEN"
+                diagnostic_info["credentials"]["value"] = f"{auth_token[:20]}..."
+            else:
+                diagnostic_info["credentials"]["type"] = "NONE"
+                diagnostic_info["errors"].append("No credentials found")
+
+            diagnostic_info["status"] = "ok"
+
+        except Exception as e:
+            diagnostic_info["status"] = "error"
+            diagnostic_info["errors"].append(str(e))
+
+        return Response(diagnostic_info, status=status.HTTP_200_OK)

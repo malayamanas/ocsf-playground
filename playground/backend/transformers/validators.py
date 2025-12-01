@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict
 from backend.core.ocsf.ocsf_schema_v1_1_0 import OCSF_SCHEMA as OCSF_SCHEMA_V1_1_0
 from backend.core.ocsf.ocsf_schemas import make_get_ocsf_event_schema, make_get_ocsf_object_schemas, PrintableOcsfObject
 from backend.core.ocsf.ocsf_versions import OcsfVersion
+from backend.core.ocsf.schema_loader import get_ocsf_schema
 from backend.core.validation_report import ValidationReport
 from backend.core.validators import PythonLogicInvalidSyntaxError, PythonLogicNotInModuleError, PythonLogicNotExecutableError
 
@@ -85,7 +86,13 @@ class TransformerValidatorBase(ABC):
 
         return report
     
-class OcsfV1_1_0TransformValidator(TransformerValidatorBase):
+class OcsfTransformValidator(TransformerValidatorBase):
+    """Version-agnostic OCSF Transform Validator"""
+
+    def __init__(self, event_name: str, input_entry: str, transformer: Transformer, ocsf_version: OcsfVersion):
+        super().__init__(event_name, input_entry, transformer)
+        self.ocsf_version = ocsf_version
+
     def _validate_object(self, object_schemas_by_name: Dict[str, PrintableOcsfObject], obj_data: Dict[str, Any], schema_obj: PrintableOcsfObject, report: ValidationReport, path: str=""):
         logger.debug(f"Validating object at path: {path}")
         logger.debug(f"Object data: {json.dumps(obj_data, indent=4)}")
@@ -154,11 +161,17 @@ class OcsfV1_1_0TransformValidator(TransformerValidatorBase):
         return valid
 
     def _try_validate_schema(self, input_entry: str, transformer: Transformer, transformer_output: Dict[str, Any], report: ValidationReport):
-        ocsf_version = OcsfVersion.V1_1_0
-        schema = OCSF_SCHEMA_V1_1_0
-        
+        # Use the instance's OCSF version
+        ocsf_version = self.ocsf_version
+
+        # Get schema - use cached v1.1.0 for performance, dynamic for others
+        if ocsf_version == OcsfVersion.V1_1_0:
+            schema = OCSF_SCHEMA_V1_1_0
+        else:
+            schema = get_ocsf_schema(ocsf_version)
+
         report.append_entry(f"Validating the transform output against the OCSF Schema for version {ocsf_version.value} and category {self.event_name}...", logger.info)
-        
+
         # Get the specific schemas in use for the event class
         try:
             event_schema = make_get_ocsf_event_schema(schema)(self.event_name, [])
@@ -166,20 +179,25 @@ class OcsfV1_1_0TransformValidator(TransformerValidatorBase):
         except ValueError as e:
             report.append_entry(f"Schema validation error: {str(e)}", logger.error)
             raise
-        
+
         # Create a dictionary of object schemas by name for quick lookup
         object_schemas_by_name = {obj.name: obj for obj in object_schemas}
-        
+
         # Validate the top level object
         is_valid = self._validate_object(object_schemas_by_name, transformer_output, event_schema, report)
-        
+
         if is_valid:
             report.append_entry("Transform output conforms to the OCSF schema", logger.info)
         else:
             report.append_entry("Transform output does not conform to the OCSF schema", logger.error)
             raise ValueError("Transform output does not conform to the OCSF schema")
         
-class PythonOcsfV1_1_0TransformValidator(OcsfV1_1_0TransformValidator):
+# Backward compatibility alias
+OcsfV1_1_0TransformValidator = OcsfTransformValidator
+
+
+class PythonOcsfTransformValidator(OcsfTransformValidator):
+    """Python-specific OCSF Transform Validator"""
     def _load_transformer_logic(self, transformer: Transformer) -> Callable[[str], str]:
         # Take the raw logic and attempt to load it into an executable form
         try:
@@ -196,3 +214,6 @@ class PythonOcsfV1_1_0TransformValidator(OcsfV1_1_0TransformValidator):
             raise PythonLogicNotExecutableError("The 'transformer' attribute must be an executable function")
         
         return transformer_module.transformer
+
+# Backward compatibility alias for Python validator
+PythonOcsfV1_1_0TransformValidator = PythonOcsfTransformValidator

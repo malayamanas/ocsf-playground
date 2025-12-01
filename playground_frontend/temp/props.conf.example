@@ -1,0 +1,207 @@
+# ========================================
+# Splunk props.conf for OCSF HTTP Activity Events
+# SINGLE-NODE SPLUNK CONFIGURATION
+# ========================================
+#
+# Deploy this file to: $SPLUNK_HOME/etc/apps/<your_app>/local/props.conf
+# or: $SPLUNK_HOME/etc/system/local/props.conf
+#
+# For single-node Splunk (all-in-one deployment with search head + indexer)
+#
+# Restart Splunk after making changes:
+# $SPLUNK_HOME/bin/splunk restart
+# ========================================
+
+[ocsf:http_activity]
+# Prevent line merging (each JSON object is a separate event)
+SHOULD_LINEMERGE = false
+
+# Line breaking on newlines
+LINE_BREAKER = ([\r\n]+)
+
+# Don't truncate long events
+TRUNCATE = 0
+
+# Extract timestamp from the "time" field (epoch milliseconds)
+TIME_PREFIX = "time"\s*:\s*
+TIME_FORMAT = %s%3N
+MAX_TIMESTAMP_LOOKAHEAD = 13
+TIMESTAMP_FIELDS = time
+
+# SEARCH-TIME JSON extraction (recommended for single-node)
+# This extracts JSON fields when you search, not when indexing
+# More flexible and allows re-extraction if field definitions change
+KV_MODE = json
+
+# Automatically extract nested JSON fields
+AUTO_KV_JSON = true
+
+# Don't create punctuation patterns (not useful for JSON)
+ANNOTATE_PUNCT = false
+
+# Category for this sourcetype
+category = Web
+
+# Maximum number of fields to extract
+MAX_FIELDS = 1000
+
+# ========================================
+# Field Aliases - Map nested OCSF fields to simple names
+# ========================================
+# These create convenient aliases for nested JSON fields
+# You can search using either the nested or simple name
+
+FIELDALIAS-src_ip = src_endpoint.ip AS src_ip
+FIELDALIAS-http_method = http_request.http_method AS http_method
+FIELDALIAS-url_string = http_request.url.url_string AS url
+FIELDALIAS-url_path = http_request.url.path AS uri_path
+FIELDALIAS-query_string = http_request.url.query_string AS uri_query
+FIELDALIAS-http_version = http_request.version AS http_version
+FIELDALIAS-http_status = http_response.code AS status
+FIELDALIAS-bytes = http_response.length AS bytes
+FIELDALIAS-referrer = http_request.referrer AS http_referrer
+FIELDALIAS-user_agent = http_request.user_agent AS http_user_agent
+
+# OCSF standard fields
+FIELDALIAS-ocsf_class = class_uid AS ocsf_class_uid
+FIELDALIAS-ocsf_category = category_uid AS ocsf_category_uid
+FIELDALIAS-ocsf_type = type_uid AS ocsf_type_uid
+FIELDALIAS-ocsf_activity = activity_id AS ocsf_activity_id
+FIELDALIAS-ocsf_severity = severity_id AS ocsf_severity_id
+FIELDALIAS-ocsf_action = action_id AS ocsf_action_id
+
+# ========================================
+# Calculated Fields - Additional computed fields
+# ========================================
+
+# Extract status code category (2xx, 3xx, 4xx, 5xx)
+EVAL-status_type = case(
+    status>=200 AND status<300, "success",
+    status>=300 AND status<400, "redirect",
+    status>=400 AND status<500, "client_error",
+    status>=500 AND status<600, "server_error",
+    1==1, "unknown"
+)
+
+# Human-readable HTTP method category
+EVAL-http_method_type = case(
+    http_method="GET", "read",
+    http_method="POST", "create",
+    http_method="PUT", "update",
+    http_method="DELETE", "delete",
+    http_method="HEAD", "metadata",
+    http_method IN ("OPTIONS", "TRACE", "CONNECT"), "other",
+    1==1, "unknown"
+)
+
+# Calculate response size in KB/MB
+EVAL-bytes_kb = round(bytes/1024, 2)
+EVAL-bytes_mb = round(bytes/1048576, 2)
+
+# Determine if response was successful
+EVAL-is_success = if(status>=200 AND status<300, "true", "false")
+
+# Determine if this is an error
+EVAL-is_error = if(status>=400, "true", "false")
+
+# ========================================
+# Data Routing via Transforms (Optional)
+# ========================================
+# Uncomment these to enable routing based on transforms.conf
+# Requires corresponding transforms.conf configuration
+
+# Route server errors (5xx) to security index
+# TRANSFORMS-route_server_errors = route_to_security_index
+
+# Route client errors (4xx) to monitoring index
+# TRANSFORMS-route_client_errors = route_to_monitoring_index
+
+# Filter out health check requests
+# TRANSFORMS-filter_healthchecks = filter_healthcheck_requests
+
+# ========================================
+# Event Type Definitions (Optional)
+# ========================================
+# Define in eventtypes.conf or uncomment here:
+
+# [ocsf_http_success]
+# search = sourcetype=ocsf:http_activity status>=200 status<300
+
+# [ocsf_http_redirect]
+# search = sourcetype=ocsf:http_activity status>=300 status<400
+
+# [ocsf_http_client_error]
+# search = sourcetype=ocsf:http_activity status>=400 status<500
+
+# [ocsf_http_server_error]
+# search = sourcetype=ocsf:http_activity status>=500 status<600
+
+# ========================================
+# Tags for CIM Compliance (Optional)
+# ========================================
+# Tag for Web datamodel
+# Define in tags.conf or here:
+
+# [eventtype=ocsf_http_*]
+# web = enabled
+
+# ========================================
+# Lookups (Optional)
+# ========================================
+# Map OCSF codes to human-readable names
+
+# Map activity_id to human-readable names
+# LOOKUP-activity_name = ocsf_activity_lookup activity_id OUTPUT activity_name
+
+# Map class_uid to OCSF class names
+# LOOKUP-class_name = ocsf_class_lookup class_uid OUTPUT class_name
+
+# Map status codes to descriptions
+# LOOKUP-status_description = http_status_lookup status OUTPUT status_description
+
+# ========================================
+# Example Searches
+# ========================================
+# Test these searches after configuration:
+
+# Basic search for all OCSF HTTP events:
+# index=ocsf sourcetype=ocsf:http_activity
+
+# Find client errors (4xx):
+# index=ocsf sourcetype=ocsf:http_activity status>=400 status<500
+
+# Find server errors (5xx):
+# index=ocsf sourcetype=ocsf:http_activity status>=500
+
+# Top URLs by request count:
+# index=ocsf sourcetype=ocsf:http_activity | stats count by url | sort -count
+
+# Top source IPs:
+# index=ocsf sourcetype=ocsf:http_activity | stats count by src_ip | sort -count
+
+# Average response size by HTTP method:
+# index=ocsf sourcetype=ocsf:http_activity | stats avg(bytes) by http_method
+
+# Timeline of status codes:
+# index=ocsf sourcetype=ocsf:http_activity | timechart count by status_type
+
+# Search nested fields directly:
+# index=ocsf sourcetype=ocsf:http_activity | table src_endpoint.ip http_request.http_method http_response.code
+
+# ========================================
+# SSL/TLS Variant (Optional)
+# ========================================
+# If you have SSL-specific logs with different sourcetype:
+
+[ocsf:http_activity:ssl]
+SHOULD_LINEMERGE = false
+LINE_BREAKER = ([\r\n]+)
+TRUNCATE = 0
+TIME_PREFIX = "time"\s*:\s*
+TIME_FORMAT = %s%3N
+KV_MODE = json
+AUTO_KV_JSON = true
+
+# Mark SSL traffic
+EVAL-is_ssl = "true"
+EVAL-protocol = "https"

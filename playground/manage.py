@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+import certifi, os
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

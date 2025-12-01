@@ -1,10 +1,16 @@
-import { 
-  Configuration, 
-  TransformerApi, 
-  TransformerHeuristicCreateRequest, 
-  TransformerCategorizeV110Request, 
-  TransformerLogicV110CreateRequest, 
+import {
+  Configuration,
+  TransformerApi,
+  TransformerHeuristicCreateRequest,
+  TransformerCategorizeV110Request,
+  TransformerCategorizeRequest,
+  TransformerEntitiesAnalyzeRequest,
+  TransformerEntitiesExtractRequest,
+  TransformerEntitiesTestRequest,
+  TransformerLogicCreateRequest,
+  TransformerLogicV110CreateRequest,
   OcsfCategoryEnum,
+  OcsfVersionEnum,
   TransformLanguageEnum
 } from '../generated-api-client';
 import { API_BASE_URL } from './constants';
@@ -47,101 +53,111 @@ export const getRegexRecommendation = async (
   }
 };
 
-// Get OCSF category recommendation
+// Get OCSF category recommendation (version-flexible)
 export const getCategoryRecommendation = async (
   logEntry: string,
-  guidance: string
+  guidance: string,
+  ocsfVersion?: OcsfVersionEnum
 ) => {
   try {
-    const payload: TransformerCategorizeV110Request = {
+    const payload: TransformerCategorizeRequest = {
       input_entry: logEntry,
-      user_guidance: guidance
+      user_guidance: guidance,
+      ocsf_version: ocsfVersion
     };
-    const response = await apiClient.transformerCategorizeV110Create(payload);
+    const response = await apiClient.transformerCategorizeCreate(payload);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Analyze entities in a log entry
+// Analyze entities in a log entry (version-flexible)
 export const analyzeEntities = async (
-  ocsfCategory: OcsfCategoryEnum,
-  logEntry: string
+  ocsfCategory: string,
+  logEntry: string,
+  ocsfVersion?: OcsfVersionEnum
 ) => {
   try {
-    const payload = {
+    const payload: TransformerEntitiesAnalyzeRequest = {
       ocsf_category: ocsfCategory,
-      input_entry: logEntry
+      input_entry: logEntry,
+      ocsf_version: ocsfVersion
     };
-    
-    const response = await apiClient.transformerEntitiesV110AnalyzeCreate(payload);
+
+    const response = await apiClient.transformerEntitiesAnalyzeCreate(payload);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Extract transformation patterns for entities
+// Extract transformation patterns for entities (version-flexible)
 export const extractEntityPatterns = async (
   transformLanguage: TransformLanguageEnum,
-  ocsfCategory: OcsfCategoryEnum,
+  ocsfCategory: string,
   logEntry: string,
-  mappings: any[]
+  mappings: any[],
+  ocsfVersion?: OcsfVersionEnum
 ) => {
   try {
-    const payload = {
+    const payload: TransformerEntitiesExtractRequest = {
       transform_language: transformLanguage,
       ocsf_category: ocsfCategory,
       input_entry: logEntry,
-      mappings: mappings
+      mappings: mappings,
+      ocsf_version: ocsfVersion
     };
-    
-    const response = await apiClient.transformerEntitiesV110ExtractCreate(payload);
+
+    const response = await apiClient.transformerEntitiesExtractCreate(payload);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Test extraction pattern
+// Test extraction pattern (version-flexible)
 export const testExtractionPattern = async (
   transformLanguage: TransformLanguageEnum,
-  ocsfCategory: OcsfCategoryEnum,
+  ocsfCategory: string,
   logEntry: string,
-  pattern: any
+  pattern: any,
+  ocsfVersion?: OcsfVersionEnum
 ) => {
   try {
-    const payload = {
+    const payload: TransformerEntitiesTestRequest = {
       transform_language: transformLanguage,
       ocsf_category: ocsfCategory,
       input_entry: logEntry,
-      patterns: [pattern]
+      patterns: [pattern],
+      ocsf_version: ocsfVersion
     };
-    
-    const response = await apiClient.transformerEntitiesV110TestCreate(payload);
+
+    const response = await apiClient.transformerEntitiesTestCreate(payload);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Create transformer logic
+// Create transformer logic (version-flexible)
 export const createTransformerLogic = async (
   transformLanguage: TransformLanguageEnum,
-  ocsfCategory: OcsfCategoryEnum,
+  ocsfCategory: string,
   logEntry: string,
-  patterns: any[]
+  patterns: any[],
+  ocsfVersion?: OcsfVersionEnum
 ) => {
   try {
-    const payload = {
+    const payload: TransformerLogicCreateRequest = {
       transform_language: transformLanguage,
       ocsf_category: ocsfCategory,
       input_entry: logEntry,
-      patterns: patterns
+      patterns: patterns,
+      ocsf_version: ocsfVersion
     };
-    
-    const response = await apiClient.transformerLogicV110CreateCreate(payload);
+
+    const response = await apiClient.transformerLogicCreateCreate(payload);
     return response.data;
   } catch (error) {
     return handleApiError(error);

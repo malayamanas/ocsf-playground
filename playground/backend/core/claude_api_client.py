@@ -54,17 +54,33 @@ class ClaudeAPIRunnable(Runnable[LanguageModelInput, BaseMessage]):
         self.thinking_enabled = thinking_enabled
         self.thinking_budget_tokens = thinking_budget_tokens
 
-        # Ensure authentication is set up
+        # Ensure authentication is set up and get credentials
+        import os
         try:
-            ClaudeAuthentication.ensure_authenticated()
+            api_key, auth_token = ClaudeAuthentication.get_credentials()
         except Exception as e:
-            logger.warning(f"Authentication check: {e}")
-            # Continue anyway - Anthropic SDK will try default auth chain
+            logger.error(f"Authentication error: {e}")
+            raise
 
-        # Initialize Anthropic client - will use ANTHROPIC_API_KEY or Claude CLI auth
-        self.client = Anthropic()
+        # Initialize Anthropic client
+        # The Anthropic SDK expects credentials via the api_key parameter or ANTHROPIC_API_KEY env var
+        # OAuth tokens (sk-ant-oat01-...) should be treated as API keys - the SDK handles them automatically
+        if api_key:
+            self.client = Anthropic(api_key=api_key)
+            logger.debug(f"Initialized Claude API client with API key")
+        elif auth_token:
+            # Set OAuth token as ANTHROPIC_API_KEY environment variable
+            # The SDK will automatically use it when we call Anthropic()
+            os.environ['ANTHROPIC_API_KEY'] = auth_token
+            self.client = Anthropic()
+            logger.debug(f"Initialized Claude API client with OAuth token (via env)")
+        else:
+            # Fallback to default auth chain
+            self.client = Anthropic()
+            logger.debug(f"Initialized Claude API client with default auth")
+
         self._tools: List[Dict[str, Any]] = []
-        logger.debug(f"Initialized Claude API client with model: {model}")
+        logger.debug(f"Claude API client ready with model: {model}")
 
     def bind_tools(self, tools: List[BaseTool]) -> "ClaudeAPIRunnable":
         """Bind tools to this runnable, returning a new instance with tools configured."""

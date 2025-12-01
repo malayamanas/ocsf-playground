@@ -46,11 +46,45 @@ class TransformerHeuristicCreateResponseSerializer(serializers.Serializer):
     rationale = serializers.CharField()
 
 class TransformerCategorizeV1_1_0RequestSerializer(serializers.Serializer):
+    """Legacy v1.1.0 request serializer - use TransformerCategorizeRequestSerializer for version flexibility"""
     input_entry = serializers.CharField()
     user_guidance = serializers.CharField(required=False, default=None, allow_blank=True)
-    
+
+
+class TransformerCategorizeRequestSerializer(serializers.Serializer):
+    """Version-flexible categorization request serializer"""
+    input_entry = serializers.CharField()
+    user_guidance = serializers.CharField(required=False, default=None, allow_blank=True)
+    ocsf_version = EnumChoiceField(enum=OcsfVersion, required=False, default=OcsfVersion.V1_1_0)
+
+
 class TransformerCategorizeV1_1_0ResponseSerializer(serializers.Serializer):
+    """Legacy v1.1.0 response serializer"""
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
+    ocsf_version = EnumChoiceField(enum=OcsfVersion)
+    rationale = serializers.CharField()
+
+
+class DynamicOcsfCategoryField(serializers.Field):
+    """
+    Dynamic OCSF category field that validates against version-specific event class enums.
+    The category value format is "Event Name (ID)"
+    """
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            raise serializers.ValidationError("Must be a string")
+        # Basic format validation
+        if not data or '(' not in data or ')' not in data:
+            raise serializers.ValidationError("Category must be in format 'Event Name (ID)'")
+        return data
+
+    def to_representation(self, value):
+        return value
+
+
+class TransformerCategorizeResponseSerializer(serializers.Serializer):
+    """Version-flexible categorization response serializer"""
+    ocsf_category = DynamicOcsfCategoryField()
     ocsf_version = EnumChoiceField(enum=OcsfVersion)
     rationale = serializers.CharField()
 
@@ -165,12 +199,32 @@ class EntityMappingField(serializers.Field):
         return value
 
 class TransformerEntitiesV1_1_0AnalyzeRequestSerializer(serializers.Serializer):
+    """Legacy v1.1.0 analyzer request - use TransformerEntitiesAnalyzeRequestSerializer for version flexibility"""
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
     input_entry = serializers.CharField()
 
+
+class TransformerEntitiesAnalyzeRequestSerializer(serializers.Serializer):
+    """Version-flexible entities analyzer request"""
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    ocsf_version = EnumChoiceField(enum=OcsfVersion, required=False, default=OcsfVersion.V1_1_0)
+
+
 class TransformerEntitiesV1_1_0AnalyzeResponseSerializer(serializers.Serializer):
+    """Legacy v1.1.0 analyzer response"""
     ocsf_version = EnumChoiceField(enum=OcsfVersion)
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
+    input_entry = serializers.CharField()
+    data_type = serializers.CharField()
+    type_rationale = serializers.CharField()
+    mappings = serializers.ListField(child=EntityMappingField())
+
+
+class TransformerEntitiesAnalyzeResponseSerializer(serializers.Serializer):
+    """Version-flexible entities analyzer response"""
+    ocsf_version = EnumChoiceField(enum=OcsfVersion)
+    ocsf_category = DynamicOcsfCategoryField()
     input_entry = serializers.CharField()
     data_type = serializers.CharField()
     type_rationale = serializers.CharField()
@@ -361,33 +415,70 @@ class ExtractionPatternField(serializers.Field):
         return value
 
 class TransformerEntitiesV1_1_0ExtractRequestSerializer(serializers.Serializer):
+    """Legacy v1.1.0 extract request"""
     transform_language = EnumChoiceField(enum=TransformLanguage)
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
     input_entry = serializers.CharField()
     mappings = serializers.ListField(child=EntityMappingField())
 
+
+class TransformerEntitiesExtractRequestSerializer(serializers.Serializer):
+    """Version-flexible entities extract request"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    mappings = serializers.ListField(child=EntityMappingField())
+    ocsf_version = EnumChoiceField(enum=OcsfVersion, required=False, default=OcsfVersion.V1_1_0)
+
+
 class TransformerEntitiesV1_1_0ExtractResponseSerializer(serializers.Serializer):
+    """Legacy v1.1.0 extract response"""
     transform_language = EnumChoiceField(enum=TransformLanguage)
     ocsf_version = EnumChoiceField(enum=OcsfVersion)
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
     input_entry = serializers.CharField()
     patterns = serializers.ListField(child=ExtractionPatternField())
-    
+
     def validate_patterns(self, patterns):
         for i, pattern in enumerate(patterns):
             if not pattern.get('mapping'):
                 raise serializers.ValidationError(
                     f"Pattern at index {i} must have a 'mapping' field in EntitiesExtractResponse context"
                 )
-            
+
             if not pattern.get('validation_report'):
                 raise serializers.ValidationError(
                     f"Pattern at index {i} must have a 'validation_report' field in EntitiesExtractResponse context"
                 )
-        
+
         return patterns
 
+
+class TransformerEntitiesExtractResponseSerializer(serializers.Serializer):
+    """Version-flexible entities extract response"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_version = EnumChoiceField(enum=OcsfVersion)
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    patterns = serializers.ListField(child=ExtractionPatternField())
+
+    def validate_patterns(self, patterns):
+        for i, pattern in enumerate(patterns):
+            if not pattern.get('mapping'):
+                raise serializers.ValidationError(
+                    f"Pattern at index {i} must have a 'mapping' field in EntitiesExtractResponse context"
+                )
+
+            if not pattern.get('validation_report'):
+                raise serializers.ValidationError(
+                    f"Pattern at index {i} must have a 'validation_report' field in EntitiesExtractResponse context"
+                )
+
+        return patterns
+
+
 class TransformerEntitiesV1_1_0TestRequestSerializer(serializers.Serializer):
+    """Legacy v1.1.0 test request"""
     transform_language = EnumChoiceField(enum=TransformLanguage)
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
     input_entry = serializers.CharField()
@@ -408,15 +499,52 @@ class TransformerEntitiesV1_1_0TestResponseSerializer(serializers.Serializer):
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
     input_entry = serializers.CharField()
     patterns = serializers.ListField(child=ExtractionPatternField())
-    
+
     def validate_patterns(self, patterns):
         for i, pattern in enumerate(patterns):
             if not pattern.get('validation_report'):
                 raise serializers.ValidationError(
                     f"Pattern at index {i} must have a 'validation_report' field in EntitiesTestResponse context"
                 )
-        
+
         return patterns
+
+
+class TransformerEntitiesTestRequestSerializer(serializers.Serializer):
+    """Version-flexible entities test request"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    patterns = serializers.ListField(child=ExtractionPatternField())
+    ocsf_version = EnumChoiceField(enum=OcsfVersion, required=False, default=OcsfVersion.V1_1_0)
+
+    def validate_patterns(self, patterns):
+        for i, pattern in enumerate(patterns):
+            if not pattern.get('mapping'):
+                raise serializers.ValidationError(
+                    f"Pattern at index {i} must have a 'mapping' field in EntitiesTestRequest context"
+                )
+
+        return patterns
+
+
+class TransformerEntitiesTestResponseSerializer(serializers.Serializer):
+    """Version-flexible entities test response"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_version = EnumChoiceField(enum=OcsfVersion)
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    patterns = serializers.ListField(child=ExtractionPatternField())
+
+    def validate_patterns(self, patterns):
+        for i, pattern in enumerate(patterns):
+            if not pattern.get('validation_report'):
+                raise serializers.ValidationError(
+                    f"Pattern at index {i} must have a 'validation_report' field in EntitiesTestResponse context"
+                )
+
+        return patterns
+
 
 class TransformerLogicV1_1_0CreateRequestSerializer(serializers.Serializer):
     transform_language = EnumChoiceField(enum=TransformLanguage)
@@ -514,4 +642,30 @@ class TransformerLogicV1_1_0CreateResponseSerializer(serializers.Serializer):
     transform_language = EnumChoiceField(enum=TransformLanguage)
     ocsf_version = EnumChoiceField(enum=OcsfVersion)
     ocsf_category = EnumChoiceField(enum=OcsfEventClassesV1_1_0)
+    transformer = TransformerField()
+
+
+class TransformerLogicCreateRequestSerializer(serializers.Serializer):
+    """Version-flexible logic create request"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_category = DynamicOcsfCategoryField()
+    input_entry = serializers.CharField()
+    patterns = serializers.ListField(child=ExtractionPatternField())
+    ocsf_version = EnumChoiceField(enum=OcsfVersion, required=False, default=OcsfVersion.V1_1_0)
+
+    def validate_patterns(self, patterns):
+        for i, pattern in enumerate(patterns):
+            if not pattern.get('mapping'):
+                raise serializers.ValidationError(
+                    f"Pattern at index {i} must have a 'mapping' field in LogicCreateRequest context"
+                )
+
+        return patterns
+
+
+class TransformerLogicCreateResponseSerializer(serializers.Serializer):
+    """Version-flexible logic create response"""
+    transform_language = EnumChoiceField(enum=TransformLanguage)
+    ocsf_version = EnumChoiceField(enum=OcsfVersion)
+    ocsf_category = DynamicOcsfCategoryField()
     transformer = TransformerField()

@@ -1,0 +1,176 @@
+# ========================================
+# Splunk inputs.conf for OCSF Apache Transformer
+# SINGLE-NODE SPLUNK CONFIGURATION
+# ========================================
+
+# INSTALLATION INSTRUCTIONS:
+# 1. Copy transform.py and splunk_transform_wrapper.py to:
+#    $SPLUNK_HOME/bin/scripts/ (Linux/Mac)
+#    %SPLUNK_HOME%\bin\scripts\ (Windows)
+#
+# 2. Make the wrapper executable (Linux/Mac):
+#    chmod +x $SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py
+#
+# 3. Place this inputs.conf in:
+#    $SPLUNK_HOME/etc/apps/<your_app>/local/inputs.conf
+#    or $SPLUNK_HOME/etc/system/local/inputs.conf
+#
+# 4. Create the OCSF index:
+#    $SPLUNK_HOME/bin/splunk add index ocsf -auth admin:password
+#
+# 5. Restart Splunk: $SPLUNK_HOME/bin/splunk restart
+
+# ========================================
+# OPTION 1: Continuous File Monitoring (RECOMMENDED)
+# Monitors Apache access log and transforms to OCSF in real-time
+# Uses checkpoint tracking to avoid duplicate events
+# ========================================
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log]
+# Disabled by default - set to 0 to enable
+disabled = 1
+
+# How often to run the script (in seconds)
+# 60 = every minute, 300 = every 5 minutes
+interval = 60
+
+# Sourcetype for the transformed OCSF data
+sourcetype = ocsf:http_activity
+
+# Source field (identifies where data came from)
+source = apache:ocsf_transform
+
+# Index to send data to (create this index first!)
+index = ocsf
+
+# SECURITY: Don't use shell to execute script (Splunk best practice)
+# Prevents shell metacharacter expansion vulnerabilities
+start_by_shell = false
+
+# Pass the log file path as an argument
+# The script uses checkpoint tracking to only process new entries
+
+# ========================================
+# OPTION 2: Scheduled Batch Processing
+# Processes log file on a schedule (less frequent)
+# ========================================
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log]
+disabled = 1
+interval = 300  # Run every 5 minutes
+sourcetype = ocsf:http_activity
+source = apache:batch_transform
+index = ocsf
+start_by_shell = false
+
+# ========================================
+# OPTION 3: Cron-style Scheduling
+# Use cron schedule instead of interval for specific times
+# ========================================
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log]
+disabled = 1
+
+# Cron schedule: Run daily at 2 AM
+# Format: minute hour day month weekday
+# Example: "0 2 * * *" = 2:00 AM daily
+# Example: "*/15 * * * *" = every 15 minutes
+# Example: "0 */4 * * *" = every 4 hours
+schedule = 0 2 * * *
+
+sourcetype = ocsf:http_activity
+source = apache:scheduled_transform
+index = ocsf
+start_by_shell = false
+
+# ========================================
+# OPTION 4: Multiple Log Files
+# Process multiple Apache log files (e.g., HTTP and HTTPS)
+# Each gets its own checkpoint tracking
+# ========================================
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log]
+disabled = 1
+interval = 120
+sourcetype = ocsf:http_activity:main
+source = apache:http
+index = ocsf
+start_by_shell = false
+
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/ssl_access.log]
+disabled = 1
+interval = 120
+sourcetype = ocsf:http_activity:ssl
+source = apache:https
+index = ocsf
+start_by_shell = false
+
+# ========================================
+# ADVANCED CONFIGURATION OPTIONS
+# ========================================
+# Example with all available parameters and best practices
+
+[script://$SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log]
+disabled = 0
+
+# Execution frequency (in seconds)
+interval = 60
+
+# Sourcetype (critical for parsing and field extraction)
+sourcetype = ocsf:http_activity
+
+# Source identifier (helps track origin of data)
+source = apache:ocsf_transform
+
+# Destination index (must exist!)
+index = ocsf
+
+# SECURITY: Don't use shell (Splunk best practice)
+start_by_shell = false
+
+# Host field (defaults to server hostname)
+# Uncomment to override:
+# host = webserver01
+
+# Host segment extraction from source path
+# host_segment = 3  # Extract hostname from path segment
+
+# Priority (only available in Splunk Enterprise, not Universal Forwarder)
+# priority = 5  # Higher number = higher priority (default: 5)
+
+# NOTE: For single-node Splunk, outputs.conf is NOT needed
+# Data stays local and is indexed directly
+
+# ========================================
+# REQUIRED: PROPS.CONF CONFIGURATION
+# ========================================
+# See props.conf.example for complete configuration
+# Copy props.conf.example to $SPLUNK_HOME/etc/apps/<your_app>/local/props.conf
+#
+# Key settings for single-node Splunk:
+# - KV_MODE = json (search-time extraction)
+# - Field aliases for nested OCSF fields
+# - Timestamp extraction from "time" field
+#
+# See also: transforms.conf.example for advanced routing/filtering
+
+# ========================================
+# CHECKPOINT TRACKING
+# ========================================
+# The wrapper script tracks processed log positions to avoid duplicates
+# Checkpoints are stored in:
+#   $SPLUNK_HOME/var/lib/splunk/modinputs/apache_ocsf_transform_*.checkpoint
+#
+# To reprocess logs from the beginning:
+# 1. Stop Splunk: $SPLUNK_HOME/bin/splunk stop
+# 2. Remove checkpoint files:
+#    rm $SPLUNK_HOME/var/lib/splunk/modinputs/apache_ocsf_transform_*.checkpoint
+# 3. Restart Splunk: $SPLUNK_HOME/bin/splunk start
+#
+# The script automatically detects log rotation (inode changes)
+
+# ========================================
+# DEBUGGING
+# ========================================
+# To test the script manually:
+# $SPLUNK_HOME/bin/splunk cmd python $SPLUNK_HOME/bin/scripts/splunk_transform_wrapper.py /var/log/apache2/access.log
+#
+# View scripted input logs:
+# index=_internal source=*splunkd.log* component=ExecProcessor
+# index=_internal source=*splunkd.log* component=ModularInputs

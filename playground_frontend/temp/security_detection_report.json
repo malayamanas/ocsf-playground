@@ -1,0 +1,658 @@
+{
+  "statistics": {
+    "total_lines": 6539,
+    "clean_lines": 6228,
+    "attack_lines": 311,
+    "lfi_count": 140,
+    "sqli_count": 164,
+    "both_count": 7,
+    "severity_elevated": 311,
+    "attack_breakdown": {
+      "SQLi": 171,
+      "LFI": 147
+    },
+    "pattern_frequency": {
+      "%22": 34,
+      "--": 97,
+      "/etc/passwd": 89,
+      "''": 17,
+      "%00": 52,
+      "%27": 7,
+      "../": 83,
+      "%c0%af": 8,
+      "pg_sleep(": 28,
+      "sleep(": 44,
+      "/proc/version": 13
+    },
+    "attack_percentage": 4.756078911148494,
+    "clean_percentage": 95.24392108885151
+  },
+  "top_patterns": [
+    [
+      "--",
+      97
+    ],
+    [
+      "/etc/passwd",
+      89
+    ],
+    [
+      "../",
+      83
+    ],
+    [
+      "%00",
+      52
+    ],
+    [
+      "sleep(",
+      44
+    ],
+    [
+      "%22",
+      34
+    ],
+    [
+      "pg_sleep(",
+      28
+    ],
+    [
+      "''",
+      17
+    ],
+    [
+      "/proc/version",
+      13
+    ],
+    [
+      "%c0%af",
+      8
+    ]
+  ],
+  "sample_attacks": [
+    {
+      "line_number": 12,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:18:20 +0300] GET /templates/beez_20/css/personal.css HTTP/1.1 200 4918 http://192.168.4.161/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22) Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482412700000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/templates/beez_20/css/personal.css",
+            "path": "/templates/beez_20/css/personal.css",
+            "query_string": ""
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22)",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 4918
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "%22"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "%22"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 19,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:20:01 +0300] GET /index.php/2-uncategorised/1--1'%20OR%202%2b196-196-1=0%2b0%2b0%2b1%20or%20'01Fg5alL'=' HTTP/1.1 200 3304 http://192.168.4.161/DVWA Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482412801000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/index.php/2-uncategorised/1--1'%20OR%202%2b196-196-1=0%2b0%2b0%2b1%20or%20'01Fg5alL'='",
+            "path": "/index.php/2-uncategorised/1--1'%20OR%202%2b196-196-1=0%2b0%2b0%2b1%20or%20'01Fg5alL'='",
+            "query_string": ""
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/DVWA",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 3304
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "--"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "--"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 21,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:37:41 +0300] POST /index.php/component/users/?task=/etc/passwd HTTP/1.1 200 2767 http://192.168.4.161/DVWA Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482413861000,
+        "http_request": {
+          "http_method": "POST",
+          "url": {
+            "url_string": "/index.php/component/users/?task=/etc/passwd",
+            "path": "/index.php/component/users/",
+            "query_string": "task=/etc/passwd"
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/DVWA",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 6,
+        "http_response": {
+          "code": 200,
+          "length": 2767
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400206,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "LFI"
+          ],
+          "matched_patterns": [
+            "/etc/passwd"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected LFI patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "LFI"
+        ],
+        "matched_patterns": [
+          "/etc/passwd"
+        ],
+        "lfi_detected": true,
+        "sqli_detected": false
+      }
+    },
+    {
+      "line_number": 29,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:18:19 +0300] GET /media/system/js/mootools-more.js HTTP/1.1 200 68451 http://192.168.4.161/index.php/component/users/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22)&view=reset Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482412699000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/media/system/js/mootools-more.js",
+            "path": "/media/system/js/mootools-more.js",
+            "query_string": ""
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/index.php/component/users/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22)&view=reset",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 68451
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "%22"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "%22"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 31,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:18:27 +0300] GET /templates/beez_20/css/print.css HTTP/1.1 200 2149 http://192.168.4.161/index.php/component/users/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22) Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482412707000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/templates/beez_20/css/print.css",
+            "path": "/templates/beez_20/css/print.css",
+            "query_string": ""
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/index.php/component/users/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22)",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 2149
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "%22"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "%22"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 32,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:36:26 +0300] GET /index.php/component/search/?ordering=newest&searchphrase=any&searchword=%f0''%f0\\\\ HTTP/1.1 200 3148 http://192.168.4.161/DVWA Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482413786000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/index.php/component/search/?ordering=newest&searchphrase=any&searchword=%f0''%f0\\\\",
+            "path": "/index.php/component/search/",
+            "query_string": "ordering=newest&searchphrase=any&searchword=%f0''%f0\\\\"
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/DVWA",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 3148
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "''"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "''"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 51,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:18:26 +0300] GET /media/system/js/caption.js HTTP/1.1 200 751 http://192.168.4.161/index.php/component/content/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22) Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482412706000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/media/system/js/caption.js",
+            "path": "/media/system/js/caption.js",
+            "query_string": ""
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/index.php/component/content/?wvstest=javascript:domxssExecutionSink(1,%22'%5C%22%3E%3Cxsstag%3E()locxss%22)",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 751
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "%22"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "%22"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 83,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:37:18 +0300] GET /index.php/2-uncategorised/1-testsayfasi?page=&print=-1;%20waitfor%20delay%20'0:0:6'%20--%20&tmpl=component HTTP/1.1 200 1525 http://192.168.4.161/DVWA Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482413838000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/index.php/2-uncategorised/1-testsayfasi?page=&print=-1;%20waitfor%20delay%20'0:0:6'%20--%20&tmpl=component",
+            "path": "/index.php/2-uncategorised/1-testsayfasi",
+            "query_string": "page=&print=-1;%20waitfor%20delay%20'0:0:6'%20--%20&tmpl=component"
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/DVWA",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 1525
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "--"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "--"
+        ],
+        "lfi_detected": false,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 92,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:34:00 +0300] GET /index.php/component/search/?ordering=popular&searchphrase=12345'\\\\\\'\\\\\\);|]*%00{%0d%0a<%00>%bf%27'\\xf0\\x9f\\x92\\xa9&searchword= HTTP/1.1 200 3104 http://192.168.4.161/DVWA Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482413640000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/index.php/component/search/?ordering=popular&searchphrase=12345'\\\\\\'\\\\\\);|]*%00{%0d%0a<%00>%bf%27'\\xf0\\x9f\\x92\\xa9&searchword=",
+            "path": "/index.php/component/search/",
+            "query_string": "ordering=popular&searchphrase=12345'\\\\\\'\\\\\\);|]*%00{%0d%0a<%00>%bf%27'\\xf0\\x9f\\x92\\xa9&searchword="
+          },
+          "version": "HTTP/1.1",
+          "referrer": "http://192.168.4.161/DVWA",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 200,
+          "length": 3104
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "LFI",
+            "SQLi"
+          ],
+          "matched_patterns": [
+            "%00",
+            "%27"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected LFI, SQLi patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "LFI",
+          "SQLi"
+        ],
+        "matched_patterns": [
+          "%00",
+          "%27"
+        ],
+        "lfi_detected": true,
+        "sqli_detected": true
+      }
+    },
+    {
+      "line_number": 180,
+      "input": "192.168.4.25 - - [22/Dec/2016:16:36:02 +0300] GET /DVWA/vulnerabilities/fi/?page=/etc/passwd HTTP/1.1 302 390 - Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21",
+      "output": {
+        "src_endpoint": {
+          "ip": "192.168.4.25"
+        },
+        "time": 1482413762000,
+        "http_request": {
+          "http_method": "GET",
+          "url": {
+            "url_string": "/DVWA/vulnerabilities/fi/?page=/etc/passwd",
+            "path": "/DVWA/vulnerabilities/fi/",
+            "query_string": "page=/etc/passwd"
+          },
+          "version": "HTTP/1.1",
+          "referrer": "",
+          "user_agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.21 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.21"
+        },
+        "activity_id": 3,
+        "http_response": {
+          "code": 302,
+          "length": 390
+        },
+        "class_uid": 4002,
+        "category_uid": 4,
+        "type_uid": 400203,
+        "severity_id": 4,
+        "action_id": 1,
+        "metadata": {
+          "attack_detected": true,
+          "attack_types": [
+            "LFI"
+          ],
+          "matched_patterns": [
+            "/etc/passwd"
+          ]
+        },
+        "enrichments": [
+          {
+            "name": "security_pattern_detection",
+            "type": "threat_intelligence",
+            "value": "Detected LFI patterns"
+          }
+        ]
+      },
+      "detection": {
+        "attack_detected": true,
+        "attack_types": [
+          "LFI"
+        ],
+        "matched_patterns": [
+          "/etc/passwd"
+        ],
+        "lfi_detected": true,
+        "sqli_detected": false
+      }
+    }
+  ]
+}

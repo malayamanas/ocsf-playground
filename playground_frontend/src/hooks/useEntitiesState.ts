@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { OcsfCategoryEnum, TransformLanguageEnum } from '../generated-api-client';
+import { OcsfCategoryEnum, OcsfVersionEnum, TransformLanguageEnum } from '../generated-api-client';
 import { analyzeEntities, extractEntityPatterns, testExtractionPattern } from '../utils/transformerClient';
 import { SelectProps } from '@cloudscape-design/components';
 import { transformLanguageOptions, defaultTransformLanguage } from '../utils/constants';
@@ -33,13 +33,15 @@ export interface EntitiesState {
 interface EntitiesStateProps {
   logs: string[];
   selectedLogIds: string[];
-  categoryValue?: OcsfCategoryEnum;
+  categoryValue?: string;
+  versionValue?: OcsfVersionEnum;
 }
 
 const useEntitiesState = ({
   logs,
   selectedLogIds,
   categoryValue,
+  versionValue,
 }: EntitiesStateProps): EntitiesState => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
@@ -69,9 +71,9 @@ const useEntitiesState = ({
       
       // Get the selected log entry
       const selectedLogEntry = logs[parseInt(selectedLogIds[0])];
-      
+
       // Call the transformer client function
-      const response = await analyzeEntities(categoryValue, selectedLogEntry);
+      const response = await analyzeEntities(categoryValue, selectedLogEntry, versionValue);
       
       // Update state with the response
       setMappings(response.mappings);
@@ -119,10 +121,11 @@ const useEntitiesState = ({
 
       // Call the transformer client function for extraction
       const response = await extractEntityPatterns(
-        transformLanguage, 
-        categoryValue, 
+        transformLanguage,
+        categoryValue,
         selectedLogEntry,
-        mappingsToExtract
+        mappingsToExtract,
+        versionValue
       );
       
       if (mappingId) {
@@ -185,10 +188,11 @@ const useEntitiesState = ({
 
       // Call the transformer client function for testing the pattern
       const response = await testExtractionPattern(
-        transformLanguage, 
-        categoryValue, 
+        transformLanguage,
+        categoryValue,
         selectedLogEntry,
-        testPattern
+        testPattern,
+        versionValue
       );
       
       // Update state with the response - replace the pattern in the array
